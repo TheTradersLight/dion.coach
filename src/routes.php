@@ -17,7 +17,7 @@ return function (App $app) {
     });
 
     // News
-    $app->get('/', function (Request $r, Response $res) {
+    $app->get('/nouvelles', function (Request $r, Response $res) {
         ob_start();
         include __DIR__ . '/../public/pages/nouvelles.php';
         $html = ob_get_clean();
@@ -25,9 +25,6 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
-    // Les autres routes
-    $app->get('/nouvelles', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
-        ->write('<h1>Nouvelles à venir</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
 
     $app->get('/a-propos', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
         ->write('<h1>À propos à venir</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
