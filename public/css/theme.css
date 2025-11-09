@@ -1,72 +1,52 @@
-/* public/css/theme.css
-   Minimal brand theme (dark + gold accent)
-*/
-:root {
-    /* Brand palette (tweak if needed) */
-    --brand-bg: #0b0d10;         /* near-black background */
-    --brand-text: #eaeef2;       /* soft white */
-    --brand-muted: #9aa4ad;      /* muted gray */
-    --brand-gold: #d4af37;       /* gold accent */
-    --brand-gold-2: #f3d374;     /* lighter gold for hovers */
+:root{
+    --brand-bg:#000000;         /* noir pur */
+    --brand-text:#eaeef2;       /* blanc doux */
+    --brand-muted:#9aa4ad;
+    --brand-gold:#d4af37;
+    --brand-gold-2:#f3d374;
 
-    /* Bootstrap variable overrides */
-    --bs-body-bg: var(--brand-bg);
-    --bs-body-color: var(--brand-text);
-    --bs-primary: var(--brand-gold);
-    --bs-primary-rgb: 212, 175, 55;
-    --bs-link-color: var(--brand-gold);
-    --bs-link-hover-color: var(--brand-gold-2);
+    --bs-body-bg:var(--brand-bg);
+    --bs-body-color:var(--brand-text);
+    --bs-primary:var(--brand-gold);
+    --bs-primary-rgb:212,175,55;
+    --bs-link-color:var(--brand-gold);
+    --bs-link-hover-color:var(--brand-gold-2);
 }
 
-/* Hero */
-.hero {
-    min-height: 85dvh;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    padding: 5rem 1rem;
-    background:
-            radial-gradient(1200px 600px at 50% -10%, rgba(212,175,55,0.10), transparent 60%),
-            radial-gradient(800px 400px at 10% 120%, rgba(243,211,116,0.06), transparent 60%),
-            var(--brand-bg);
+/* NAV */
+.navbar {
+    background:#000;
+    border-bottom:1px solid rgba(255,255,255,.06);
 }
+.navbar .nav-link { color:#eaeef2; }
+.navbar .nav-link:hover,
+.navbar .dropdown-item:hover { color:var(--brand-gold); }
+.dropdown-menu { background:#0b0d10; border-color:rgba(255,255,255,.08); }
+.dropdown-item { color:#eaeef2; }
 
-/* Logo */
-.hero .brand-logo {
-    width: clamp(140px, 22vw, 260px);
-    height: auto;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
+/* HERO */
+.hero{
+    min-height:85dvh;
+    display:grid;place-items:center;
+    text-align:center;
+    padding:5rem 1rem;
+    background:var(--brand-bg);
 }
+.brand-logo{ width:clamp(140px,22vw,260px); height:auto; filter:drop-shadow(0 8px 24px rgba(0,0,0,.35)); }
+.hero h1{ letter-spacing:.5px; margin-top:1.25rem; }
+.hero p.lead{ color:var(--brand-muted); max-width:56ch; margin:.75rem auto 2rem; }
 
-/* Title/subtitle */
-.hero h1 {
-    letter-spacing: .5px;
-    margin-top: 1.25rem;
+/* Button */
+.btn-gold{
+    --bs-btn-color:#0b0d10;
+    --bs-btn-bg:var(--brand-gold);
+    --bs-btn-border-color:var(--brand-gold);
+    --bs-btn-hover-bg:var(--brand-gold-2);
+    --bs-btn-hover-border-color:var(--brand-gold-2);
+    --bs-btn-focus-shadow-rgb:212,175,55;
+    transition:transform .12s ease, box-shadow .2s ease;
 }
-.hero p.lead {
-    color: var(--brand-muted);
-    max-width: 56ch;
-    margin: .75rem auto 2rem;
-}
-
-/* Button glow */
-.btn-gold {
-    --bs-btn-color: #0b0d10;
-    --bs-btn-bg: var(--brand-gold);
-    --bs-btn-border-color: var(--brand-gold);
-    --bs-btn-hover-bg: var(--brand-gold-2);
-    --bs-btn-hover-border-color: var(--brand-gold-2);
-    --bs-btn-focus-shadow-rgb: 212,175,55;
-    box-shadow: 0 0 0 0 rgba(var(--bs-btn-focus-shadow-rgb), .5);
-    transition: transform .12s ease, box-shadow .2s ease;
-}
-.btn-gold:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 28px rgba(212,175,55,.25);
-}
+.btn-gold:hover{ transform:translateY(-1px); box-shadow:0 10px 28px rgba(212,175,55,.25); }
 
 /* Footer */
-.site-footer {
-    color: var(--brand-muted);
-    border-top: 1px solid rgba(255,255,255,.06);
-}
+.site-footer{ color:var(--brand-muted); border-top:1px solid rgba(255,255,255,.06); }
