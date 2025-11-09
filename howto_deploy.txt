@@ -1,0 +1,8 @@
+gcloud config set project dioncoach
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
+
+gcloud artifacts repositories create web --repository-format=docker --location=us-east1
+
+gcloud builds submit --tag us-east1-docker.pkg.dev/dioncoach/web/dion-coach:initial
+
+gcloud run deploy dion-coach --image us-east1-docker.pkg.dev/dioncoach/web/dion-coach:initial --region us-east1 --allow-unauthenticated --set-env-vars=SENDGRID_API_KEY=YOUR_KEY --port=8080
