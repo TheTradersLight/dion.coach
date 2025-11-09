@@ -1,0 +1,13 @@
+{
+  "name": "dion/coach",
+  "require": {
+    "slim/slim": "^4.12",
+    "slim/psr7": "^1.6",
+    "guzzlehttp/guzzle": "^7.9"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
