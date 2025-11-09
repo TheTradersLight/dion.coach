@@ -25,10 +25,20 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
+    $app->get('/a-propos', function (Request $r, Response $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/apropos.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
 
-    $app->get('/a-propos', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
-        ->write('<h1>À propos à venir</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
+    $app->get('/contact', function (Request $r, Response $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/contact.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
 
-    $app->get('/contact', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
-        ->write('<h1>Contact: hello@dion.coach</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
 };

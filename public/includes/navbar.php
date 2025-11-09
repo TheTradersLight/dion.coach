@@ -2,7 +2,7 @@
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2" href="/">
             <img src="/assets/logo_mark.png" alt="dion.coach" height="100" width="100">
-            <span class="fw-semibold">dion.coach</span>
+            <span class="fw-semibold"></span>
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
