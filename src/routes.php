@@ -7,33 +7,31 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 return function (App $app) {
 
-    // Home
+    // Page d'accueil
     $app->get('/', function (Request $r, Response $res) {
-        $html = @file_get_contents(__DIR__ . '/../public/home.html');
-        if ($html === false) {
-            $res->getBody()->write('home.html manquant');
-            return $res->withStatus(500)->withHeader('Content-Type','text/plain; charset=utf-8');
-        }
+        ob_start();
+        include __DIR__ . '/../public/pages/home.php';
+        $html = ob_get_clean();
         $res->getBody()->write($html);
-        return $res->withHeader('Content-Type','text/html; charset=utf-8');
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
-    // Pages simples (placeholders)
-    $app->get('/nouvelles', function (Request $r, Response $res) {
-        $res->getBody()->write('<div style="padding:3rem;color:#eaeef2;background:#000;font-family:system-ui">
-          <h1>Nouvelles</h1><p>Bientôt…</p></div>');
-        return $res->withHeader('Content-Type','text/html; charset=utf-8');
+    // News
+    $app->get('/', function (Request $r, Response $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/nouvelles.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
-    $app->get('/a-propos', function (Request $r, Response $res) {
-        $res->getBody()->write('<div style="padding:3rem;color:#eaeef2;background:#000;font-family:system-ui">
-          <h1>À propos</h1><p>À venir.</p></div>');
-        return $res->withHeader('Content-Type','text/html; charset=utf-8');
-    });
+    // Les autres routes
+    $app->get('/nouvelles', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
+        ->write('<h1>Nouvelles à venir</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
 
-    $app->get('/contact', function (Request $r, Response $res) {
-        $res->getBody()->write('<div style="padding:3rem;color:#eaeef2;background:#000;font-family:system-ui">
-          <h1>Contact</h1><p>Écris-moi: hello@dion.coach</p></div>');
-        return $res->withHeader('Content-Type','text/html; charset=utf-8');
-    });
+    $app->get('/a-propos', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
+        ->write('<h1>À propos à venir</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
+
+    $app->get('/contact', fn($r, $res) => $res->withBody((new Slim\Psr7\Stream(fopen('php://temp', 'r+'))))
+        ->write('<h1>Contact: hello@dion.coach</h1>')->withHeader('Content-Type', 'text/html; charset=utf-8'));
 };
