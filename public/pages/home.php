@@ -8,8 +8,8 @@
 <!-- HERO -->
 <main class="hero">
     <div class="container">
-        <h1 class="display-6 fw-semibold">#OutWORK + #OutSMART + #OutBELIEVE = #OutPERFORM</h1>
-        <p class="lead">Élever ta performance</p>
+        <h1 class="display-6 fw-semibold">#OutWORK | #OutSMART | #OutBELIEVE <br> #OutPERFORM</h1>
+        <p class="lead">Éleve ta performance</p>
 
         <!-- Chaîne YouTube corrigée -->
         <a class="btn btn-gold btn-lg px-4" href="https://www.youtube.com/@dion_coach_ultimate" target="_blank" rel="noopener">
