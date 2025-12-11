@@ -4,7 +4,7 @@ declare(strict_types=1);
 use Slim\Factory\AppFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
-
+//require_once __DIR__ . '/vendor/autoload.php';
 $app = AppFactory::create();
 
 // Middlewares

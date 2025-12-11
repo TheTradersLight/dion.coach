@@ -8,7 +8,7 @@
 <!-- HERO -->
 <main class="hero">
     <div class="container">
-        <h1 class="display-6 fw-semibold">#OutWORK | #OutSMART | #OutBELIEVE <br> #OutPERFORM</h1>
+        <h1 class="display-6 fw-semibold">#OutWORK | #OutSMART | #OutBELIEVE <br><br> #OutPERFORM</h1>
         <p class="lead">Éleve ta performance</p>
 
         <!-- Chaîne YouTube corrigée -->
