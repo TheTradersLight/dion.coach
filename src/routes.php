@@ -40,5 +40,30 @@ return function (App $app) {
         $res->getBody()->write($html);
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
+    $app->get('/login', function (Request $r, Response $res) {
+        require_once __DIR__ . '/../includes/auth/getAuth.php';
+        getAuth()->login();
+        return $res;
+    });
 
+    $app->get('/callback', function (Request $r, Response $res) {
+        require_once __DIR__ . '/../includes/auth/getAuth.php';
+        getAuth()->exchange();
+        return $res->withHeader('Location', '/dashboard')->withStatus(302);
+    });
+
+    $app->get('/dashboard', function (Request $r, Response $res) {
+        require_once __DIR__ . '/../includes/auth/getAuth.php';
+        $user = getAuth()->getUser();
+
+        if (!$user) {
+            return $res->withHeader('Location', '/login')->withStatus(302);
+        }
+        $GLOBALS['user'] = $user;
+        ob_start();
+        include __DIR__ . '/../public/pages/dashboard.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
 };
