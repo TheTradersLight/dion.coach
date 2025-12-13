@@ -19,6 +19,11 @@
                         <li><a class="dropdown-item" href="/nouvelles">Nouvelles</a></li>
                         <li><a class="dropdown-item" href="/a-propos">À propos</a></li>
                         <li><a class="dropdown-item" href="/contact">Contactez-moi</a></li>
+                        <? if(!empty(($user['email']))){ ?>
+                            <li><a class="dropdown-item" href="/logout">Deconnexion</a></li>
+                        <? }else{  ?>
+                            <li><a class="dropdown-item" href="/login">Connexion</a></li>
+                        <? } ?>
                     </ul>
                 </li>
             </ul>

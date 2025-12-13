@@ -4,6 +4,7 @@ $user = getAuth()->getUser();
 ?>
 
 <?php include __DIR__ . '/../includes/head.php'; ?>
+<body>
 <?php include __DIR__ . '/../includes/navbar.php'; ?>
 
 <main class="container">
@@ -22,4 +23,6 @@ $user = getAuth()->getUser();
     <p><a href="/logout">Se déconnecter</a></p>
 </main>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php //include __DIR__ . '/../includes/footer.php'; ?>
+</body>
+</html>

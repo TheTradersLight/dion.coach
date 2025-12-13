@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 use Auth0\SDK\Auth0;
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 
 /**
  * Retourne une instance Auth0 préconfigurée
@@ -13,7 +14,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 function getAuth(): Auth0
 {
     return new Auth0([
-        'domain' => 'dion.coach',
+        'domain' => 'ionultimate.auth0.com',
         'clientId' => 'bWZ4d4P0QPtyeernlkXz1hI8BSILJn05',
         'clientSecret' => 'C0aRexx3wXnbBAfoGhRVh0MikwAWEUPptNuvewcaHGMv_pGJVrHj8FSi9Hme0Wgv',
         'redirectUri' => 'https://dion.coach/callback',
