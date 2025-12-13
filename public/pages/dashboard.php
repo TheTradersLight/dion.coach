@@ -16,11 +16,10 @@ $user = getAuth()->getUser();
         <li><strong>Provider :</strong> <?= htmlspecialchars($user['sub']) ?></li>
     </ul>
 
-    <?php if (!empty($user['picture'])): ?>
+    <?php /*if (!empty($user['picture'])): ?>
         <img src="<?= htmlspecialchars($user['picture']) ?>" alt="Photo de profil" style="max-width: 120px; border-radius: 50%;">
-    <?php endif; ?>
+    <?php endif;*/ ?>
 
-    <p><a href="/logout">Se déconnecter</a></p>
 </main>
 
 <?php //include __DIR__ . '/../includes/footer.php'; ?>

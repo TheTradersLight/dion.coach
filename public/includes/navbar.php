@@ -10,22 +10,25 @@
         </button>
 
         <div class="collapse navbar-collapse justify-content-end" id="mainNav">
-            <ul class="navbar-nav align-items-lg-center">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="menuDrop" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Menu
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="menuDrop">
-                        <li><a class="dropdown-item" href="/nouvelles">Nouvelles</a></li>
-                        <li><a class="dropdown-item" href="/a-propos">À propos</a></li>
-                        <li><a class="dropdown-item" href="/contact">Contactez-moi</a></li>
-                        <? if(!empty(($user['email']))){ ?>
-                            <li><a class="dropdown-item" href="/logout">Deconnexion</a></li>
-                        <? }else{  ?>
-                            <li><a class="dropdown-item" href="/login">Connexion</a></li>
-                        <? } ?>
-                    </ul>
+            <ul class="navbar-nav align-items-lg-center gap-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/nouvelles">Nouvelles</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/a-propos">À propos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/contact">Contact</a>
+                </li>
+                <?php if (!empty($user['email'])): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Déconnexion</a>
+                    </li>
+                <?php else: ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Connexion</a>
+                    </li>
+                <?php endif; ?>
             </ul>
         </div>
     </div>
