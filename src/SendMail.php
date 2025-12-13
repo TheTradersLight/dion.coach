@@ -20,13 +20,13 @@ class SendMail
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'eric@dion.coach';
-        $mail->Password   = 'TON_MOT_DE_PASSE_D_APPLI';
+        $mail->Username   = 'eric@quebecenligne.com';
+        $mail->Password   = 'tyyc uqvu grvp xuvz';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
-        $mail->setFrom('eric@dion.coach', 'Formulaire Dion.coach');
-        $mail->addAddress('eric@dion.coach');
+        $mail->setFrom('eric@quebecenligne.com', 'Formulaire Dion.coach');
+        $mail->addAddress('eric@quebecenligne.com');
         $mail->addReplyTo($email, $name);
 
         $mail->isHTML(true);

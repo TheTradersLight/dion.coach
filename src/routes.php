@@ -39,7 +39,7 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
-    $app->get('/contact', function (Request $r, Response $res) {
+    $app->map(['GET', 'POST'],'/contact', function (Request $r, Response $res) {
         require_once __DIR__ . '/auth/getAuth.php';
         $user = getAuth()->getUser();
 
