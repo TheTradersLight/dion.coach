@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/../src/database/Database.php';
-require_once __DIR__ . '/../src/database/UserRepository.php';
-require_once __DIR__ . '/../src/auth/AuthService.php';
+require_once __DIR__ . '/../src/Database/Database.php';
+require_once __DIR__ . '/../src/Database/UserRepository.php';
+require_once __DIR__ . '/../src/Auth/AuthService.php';
 
 use App\Database\UserRepository;
 use App\Auth\AuthService;

@@ -9,7 +9,7 @@ return function (App $app) {
 
     // Page d'accueil
     $app->get('/', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/home.php';
@@ -20,7 +20,7 @@ return function (App $app) {
 
     // News
     $app->get('/nouvelles', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/nouvelles.php';
@@ -30,7 +30,7 @@ return function (App $app) {
     });
 
     $app->get('/a-propos', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/apropos.php';
@@ -40,7 +40,7 @@ return function (App $app) {
     });
 
     $app->map(['GET', 'POST'],'/contact', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
 
         ob_start();
@@ -50,7 +50,7 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
     $app->get('/login', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
 
         $url = getAuth()->login(
             null,
@@ -66,13 +66,13 @@ return function (App $app) {
     });
 
     $app->get('/callback', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         getAuth()->exchange();
         return $res->withHeader('Location', '/dashboard')->withStatus(302);
     });
 
     $app->get('/dashboard', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
 
         if (!$user) {
@@ -87,7 +87,7 @@ return function (App $app) {
     });
 
     $app->get('/logout', function (Request $r, Response $res) {
-        require_once __DIR__ . '/auth/getAuth.php';
+        require_once __DIR__ . '/Auth/getAuth.php';
 
         $auth0 = getAuth();
 
