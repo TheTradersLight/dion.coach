@@ -65,12 +65,42 @@ return function (App $app) {
             ->withStatus(302);
     });
 
-    $app->get('/callback', function (Request $r, Response $res) {
+    $app->map(['GET', 'POST'],'/callback', function (Request $r, Response $res) {
         require_once __DIR__ . '/Auth/getAuth.php';
-        getAuth()->exchange();
-        return $res->withHeader('Location', '/dashboard')->withStatus(302);
-    });
+        $auth0 = getAuth();
+        ob_start();
+        include __DIR__ . '/../public/pages/callback.php';
+        $html = ob_get_clean();
 
+        // IMPORTANT :
+        // callback.php fait des header(Location...) puis exit;
+        // donc normalement on NE devrait PAS atteindre ce point.
+        // Mais si jamais callback.php affiche du debug, on l'affiche.
+
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
+    $app->map(['GET', 'POST'], '/register', function (Request $r, Response $res) {
+        //require_once __DIR__ . '/Auth/getAuth.php';
+        //$auth0 = getAuth();
+
+        ob_start();
+        include __DIR__ . '/../public/pages/register.php';
+        $html = ob_get_clean();
+
+        // register.php va souvent faire:
+        //   header('Location: /dashboard');
+        //   exit;
+        //
+        // Donc ce code ne sera atteint que si:
+        // - il y a des erreurs
+        // - ou on affiche juste le formulaire
+        // - ou on est en debug
+
+        $res->getBody()->write($html);
+
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
     $app->get('/dashboard', function (Request $r, Response $res) {
         require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
@@ -103,5 +133,29 @@ return function (App $app) {
         );
 
         return $res->withHeader('Location', $logoutUrl)->withStatus(302);
+    });
+
+    $app->get('/privacy-policy', function ($req, $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/privacy.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html');
+    });
+
+    $app->get('/data-deletion', function ($req, $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/data-deletion.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html');
+    });
+
+    $app->get('/terms', function ($req, $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/terms.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html');
     });
 };

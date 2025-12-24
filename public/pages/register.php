@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/../src/Database/Database.php';
-require_once __DIR__ . '/../src/Database/UserRepository.php';
-require_once __DIR__ . '/../src/Auth/AuthService.php';
+//require_once __DIR__ . '/../src/Database/Database.php';
+//require_once __DIR__ . '/../src/Database/UserRepository.php';
+//require_once __DIR__ . '/../src/Auth/AuthService.php';
 
 use App\Database\UserRepository;
 use App\Auth\AuthService;
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['pending_oauth']);
 
         // 2.6) Redirect final
-        header('Location: /pages/dashboard.php');
+        header('Location: /dashboard');
         exit;
     }
 }

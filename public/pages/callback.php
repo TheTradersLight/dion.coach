@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------
 // DEBUG SWITCH
 // ---------------------------------------------------------------------
-define('DEBUG_CALLBACK', true);   // <-- METTRE false POUR PROD
+define('DEBUG_CALLBACK', false);   // <-- METTRE false POUR PROD
 
 function trace($msg, $var = null) {
     if (DEBUG_CALLBACK) {
@@ -17,7 +17,7 @@ function trace($msg, $var = null) {
     }
 }
 
-require_once __DIR__ . '/vendor/autoload.php';
+//require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Database\UserRepository;
 
@@ -101,7 +101,7 @@ if ($user) {
         exit;
     }
 
-    header('Location: /pages/dashboard1.php');
+    header('Location: /dashboard');
     exit;
 }
 
@@ -126,5 +126,5 @@ if (DEBUG_CALLBACK) {
     exit;
 }
 
-header('Location: /pages/register.php');
+header('Location: /register');
 exit;
