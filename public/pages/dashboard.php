@@ -22,6 +22,6 @@ $user = getAuth()->getUser();
 
 </main>
 
-<?php //include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
 </body>
 </html>
