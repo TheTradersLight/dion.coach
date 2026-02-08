@@ -6,3 +6,12 @@ gcloud artifacts repositories create web --repository-format=docker --location=u
 gcloud builds submit --tag us-east1-docker.pkg.dev/dioncoach/web/dion-coach:initial
 
 gcloud run deploy dion-coach --image us-east1-docker.pkg.dev/dioncoach/web/dion-coach:initial --region us-east1 --allow-unauthenticated --set-env-vars=SENDGRID_API_KEY=YOUR_KEY --port=8080
+
+
+
+
+
+
+
+
+gcloud sql instances add-iam-policy-binding dbcoach --project=dioncoach --member="serviceAccount:640769091917-compute@developer.gserviceaccount.com" --role="roles/cloudsql.client"

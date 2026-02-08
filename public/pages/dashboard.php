@@ -1,5 +1,6 @@
 <?php
 // On récupère l'objet utilisateur passé depuis la route (via getAuth()->getUser())
+session_start();
 $user = getAuth()->getUser();
 ?>
 
@@ -8,12 +9,11 @@ $user = getAuth()->getUser();
 <?php include __DIR__ . '/../includes/navbar.php'; ?>
 
 <main class="container">
-    <h1>Bienvenue, <?= htmlspecialchars($user['name']) ?> 👋</h1>
+    <h1>Bienvenue, <?= htmlspecialchars($_SESSION['user_name']) ?> 👋</h1>
 
     <p>Vous êtes connecté avec :</p>
     <ul>
-        <li><strong>Email :</strong> <?= htmlspecialchars($user['email']) ?></li>
-        <li><strong>Provider :</strong> <?= htmlspecialchars($user['sub']) ?></li>
+        <li><strong>Email :</strong> <?= htmlspecialchars($_SESSION['user_email']) ?></li>
     </ul>
 
     <?php /*if (!empty($user['picture'])): ?>

@@ -23,6 +23,15 @@ $email          = $data['email'] ?? '';
 $name           = $data['name'] ?? '';
 $avatarUrl      = $data['avatarUrl'] ?? null;
 
+
+//$email = strtolower(trim($email ?? ''));
+//$name  = trim($name ?? '');
+
+// Si le "nom" est en fait l'email → on vide
+if ($name && $email && strtolower($name) === $email) {
+    $name = '';
+}
+
 // ---------------------------------------------------------------------
 // 2) TRAITEMENT DU FORMULAIRE : POST = créer le user + provider
 // ---------------------------------------------------------------------
@@ -101,8 +110,6 @@ include __DIR__ . '/../includes/head.php';
     <h1 class="mb-4">Créer votre compte</h1>
 
     <p class="text-muted">
-        Vous êtes authentifié via
-        <strong><?= htmlspecialchars(ucfirst($provider)) ?></strong>.
         Merci de compléter votre profil pour finaliser votre inscription.
     </p>
 

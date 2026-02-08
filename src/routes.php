@@ -101,6 +101,17 @@ return function (App $app) {
 
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
+    $app->map(['GET', 'POST'], '/verify-email-required', function (Request $r, Response $res) {
+        require_once __DIR__ . '/Auth/getAuth.php';
+        $user = getAuth()->getUser();
+        ob_start();
+        include __DIR__ . '/../public/pages/verify-email-required.php';
+        $html = ob_get_clean();
+
+        $res->getBody()->write($html);
+
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+    });
     $app->get('/dashboard', function (Request $r, Response $res) {
         require_once __DIR__ . '/Auth/getAuth.php';
         $user = getAuth()->getUser();
@@ -157,5 +168,20 @@ return function (App $app) {
         $html = ob_get_clean();
         $res->getBody()->write($html);
         return $res->withHeader('Content-Type', 'text/html');
+    });
+
+    // --- Camps de selection (prototype) ---
+    $app->get('/camps/evaluate', function (Request $r, Response $res) {
+        require_once __DIR__ . '/Auth/getAuth.php';
+        $user = getAuth()->getUser();
+        if (!$user) {
+            return $res->withHeader('Location', '/login')->withStatus(302);
+        }
+        $GLOBALS['user'] = $user;
+        ob_start();
+        include __DIR__ . '/../public/pages/camps/evaluate.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 };

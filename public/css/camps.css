@@ -1,0 +1,134 @@
+/* ============================================================
+   Module Camps de Selection - Styles
+   ============================================================ */
+
+.text-gold { color: var(--brand-gold) !important; }
+
+/* Category header */
+.eval-category { border: 1px solid rgba(255,255,255,.08); border-radius: .5rem; overflow: hidden; }
+.eval-category-header {
+    background: rgba(212,175,55,.12);
+    color: var(--brand-gold);
+    font-weight: 600;
+    padding: .5rem .75rem;
+    font-size: .9rem;
+    letter-spacing: .3px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+/* Skill row */
+.eval-skill-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .75rem;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    transition: background .3s;
+}
+.eval-skill-row:last-child { border-bottom: none; }
+.eval-skill-row:hover { background: rgba(255,255,255,.03); }
+.eval-skill-row.just-saved { background: rgba(212,175,55,.08); }
+
+.eval-skill-name {
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+/* Rating buttons */
+.eval-skill-buttons {
+    display: flex;
+    gap: 2px;
+}
+
+.rating-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: transparent;
+    color: var(--brand-text);
+    border-radius: 4px;
+    font-size: .85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .12s;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.rating-btn:hover {
+    border-color: var(--brand-gold);
+    color: var(--brand-gold);
+    background: rgba(212,175,55,.1);
+}
+.rating-btn.active {
+    background: var(--brand-gold);
+    border-color: var(--brand-gold);
+    color: #000;
+    font-weight: 700;
+}
+.rating-clear {
+    border-color: rgba(255,80,80,.3);
+    color: rgba(255,80,80,.6);
+    font-size: 1rem;
+}
+.rating-clear:hover {
+    border-color: #ff5050;
+    color: #ff5050;
+    background: rgba(255,80,80,.1);
+}
+
+/* Comment input */
+.skill-comment {
+    width: 120px;
+    background: rgba(255,255,255,.05) !important;
+    border-color: rgba(255,255,255,.1) !important;
+    color: var(--brand-text) !important;
+    font-size: .78rem !important;
+}
+.skill-comment::placeholder { color: rgba(255,255,255,.25) !important; }
+.skill-comment:focus {
+    background: rgba(255,255,255,.08) !important;
+    border-color: var(--brand-gold) !important;
+    box-shadow: 0 0 0 .15rem rgba(212,175,55,.15) !important;
+}
+
+/* Results table */
+.cat-header {
+    font-size: .78rem;
+    white-space: nowrap;
+}
+#resultsTable th { font-size: .8rem; border-bottom-color: rgba(255,255,255,.1); }
+#resultsTable td { font-size: .82rem; vertical-align: middle; }
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .eval-skill-row {
+        grid-template-columns: 1fr;
+        gap: .25rem;
+        padding: .5rem .75rem;
+    }
+    .eval-skill-buttons {
+        justify-content: flex-start;
+    }
+    .skill-comment {
+        width: 100%;
+    }
+    .rating-btn {
+        width: 40px;
+        height: 40px;
+        font-size: .95rem;
+    }
+    #resultsTable { font-size: .72rem; }
+    .cat-header { font-size: .68rem; }
+}
+
+/* Touch-friendly on mobile */
+@media (pointer: coarse) {
+    .rating-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+    }
+}
