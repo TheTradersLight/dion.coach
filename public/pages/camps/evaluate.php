@@ -372,6 +372,7 @@ function showCurrentPlayer() {
     // Load ratings into grid
     loadPlayerRatings(player);
     updatePlayerTotal(player);
+    updateCategoryHeaders();
 }
 
 function updatePlayerTotal(player) {
@@ -414,9 +415,18 @@ function renderEvalGrid() {
     let html = "";
 
     TEST_DATA.skillCategories.forEach(cat => {
+        const collapseId = `cat-collapse-${cat.id}`;
         html += `<div class="eval-category mb-3">`;
-        html += `<div class="eval-category-header">${cat.name}</div>`;
+        html += `<div class="eval-category-header" data-bs-toggle="collapse" data-bs-target="#${collapseId}" role="button" aria-expanded="false" aria-controls="${collapseId}">`;
+        html += `<span class="cat-chevron me-2">&#9654;</span>`;
+        html += `<span class="cat-title">${cat.name}</span>`;
+        html += `<span class="ms-auto d-flex align-items-center gap-2">`;
+        html += `<span class="cat-avg text-muted small" id="cat-avg-${cat.id}">-</span>`;
+        html += `<span class="cat-status badge" id="cat-status-${cat.id}"></span>`;
+        html += `</span>`;
+        html += `</div>`;
 
+        html += `<div class="collapse" id="${collapseId}">`;
         cat.skills.forEach(skill => {
             html += `<div class="eval-skill-row" data-skill="${skill.id}">`;
             html += `<div class="eval-skill-name">${skill.name}</div>`;
@@ -429,11 +439,37 @@ function renderEvalGrid() {
             html += `<input type="text" class="form-control form-control-sm skill-comment" placeholder="Note..." onchange="saveComment(${skill.id}, this.value)">`;
             html += `</div>`;
         });
+        html += `</div>`;
 
         html += `</div>`;
     });
 
     grid.innerHTML = html;
+    updateCategoryHeaders();
+}
+
+function updateCategoryHeaders() {
+    const player = state.filteredPlayers[state.currentPlayerIndex];
+    if (!player) return;
+
+    TEST_DATA.skillCategories.forEach(cat => {
+        let sum = 0, count = 0;
+        cat.skills.forEach(skill => {
+            const ev = getEval(state.currentSessionId, player.camp_player_id, skill.id);
+            if (ev) { sum += ev.rating; count++; }
+        });
+
+        const avgEl = document.getElementById(`cat-avg-${cat.id}`);
+        const statusEl = document.getElementById(`cat-status-${cat.id}`);
+        if (!avgEl || !statusEl) return;
+
+        const total = cat.skills.length;
+        const isComplete = count === total;
+
+        avgEl.textContent = count > 0 ? (sum / count).toFixed(1) : "-";
+        statusEl.textContent = isComplete ? "Complet" : `${count}/${total}`;
+        statusEl.className = `cat-status badge ${isComplete ? "bg-success" : "bg-secondary"}`;
+    });
 }
 
 function rate(skillId, value) {
@@ -454,6 +490,7 @@ function rate(skillId, value) {
     updatePlayerTotal(player);
     updateProgress();
     updatePlayerSelectLabel(player);
+    updateCategoryHeaders();
     flashSaved(skillId);
 }
 
@@ -469,6 +506,7 @@ function clearRating(skillId) {
     updatePlayerTotal(player);
     updateProgress();
     updatePlayerSelectLabel(player);
+    updateCategoryHeaders();
 }
 
 function saveComment(skillId, comment) {

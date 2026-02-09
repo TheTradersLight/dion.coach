@@ -14,7 +14,22 @@
     font-size: .9rem;
     letter-spacing: .3px;
     border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
 }
+.eval-category-header:hover { background: rgba(212,175,55,.18); }
+.cat-chevron {
+    display: inline-block;
+    font-size: .7rem;
+    transition: transform .2s;
+}
+.eval-category-header[aria-expanded="true"] .cat-chevron {
+    transform: rotate(90deg);
+}
+.cat-avg { font-size: .8rem; }
+.cat-status { font-size: .7rem; font-weight: 500; }
 
 /* Skill row */
 .eval-skill-row {
