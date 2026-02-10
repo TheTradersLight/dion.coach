@@ -90,12 +90,17 @@ final class CampRepository
             "SELECT COUNT(*) AS c FROM camp_groups WHERE camp_id = ?",
             [$campId]
         );
+        $evaluators = Database::fetch(
+            "SELECT COUNT(*) AS c FROM camp_evaluators WHERE camp_id = ? AND status IN ('invited', 'active')",
+            [$campId]
+        );
 
         return [
-            'players'  => (int)($players['c'] ?? 0),
-            'sessions' => (int)($sessions['c'] ?? 0),
-            'skills'   => (int)($skills['c'] ?? 0),
-            'groups'   => (int)($groups['c'] ?? 0),
+            'players'    => (int)($players['c'] ?? 0),
+            'sessions'   => (int)($sessions['c'] ?? 0),
+            'skills'     => (int)($skills['c'] ?? 0),
+            'groups'     => (int)($groups['c'] ?? 0),
+            'evaluators' => (int)($evaluators['c'] ?? 0),
         ];
     }
 }

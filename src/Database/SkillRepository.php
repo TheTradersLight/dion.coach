@@ -123,4 +123,29 @@ final class SkillRepository
     {
         Database::execute("DELETE FROM skills WHERE id = ?", [$id]);
     }
+
+    /**
+     * Load a template: array of categoryName => [skillName, ...]
+     */
+    public static function loadTemplate(int $campId, array $template): void
+    {
+        $catOrder = 1;
+        foreach ($template as $categoryName => $skills) {
+            Database::execute(
+                "INSERT INTO skill_categories (camp_id, parent_id, name, sort_order) VALUES (?, NULL, ?, ?)",
+                [$campId, $categoryName, $catOrder]
+            );
+            $catId = (int)Database::lastId();
+            $catOrder++;
+
+            $skillOrder = 1;
+            foreach ($skills as $skillName) {
+                Database::execute(
+                    "INSERT INTO skills (category_id, name, description, sort_order) VALUES (?, ?, NULL, ?)",
+                    [$catId, $skillName, $skillOrder]
+                );
+                $skillOrder++;
+            }
+        }
+    }
 }

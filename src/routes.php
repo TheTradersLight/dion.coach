@@ -352,4 +352,11 @@ return function (App $app) {
 
     $campsRoutes = require __DIR__ . '/routes-camps.php';
     $campsRoutes($app);
+
+    // =====================================================================
+    // ROUTES API JSON (évaluations camps)
+    // =====================================================================
+
+    $apiRoutes = require __DIR__ . '/routes-api.php';
+    $apiRoutes($app);
 };

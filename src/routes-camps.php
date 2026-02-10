@@ -72,6 +72,9 @@ return function (App $app) {
         // --- Groupes ---
         $camps->map(['GET', 'POST'], '/{id:[0-9]+}/groups', $includePage('groups.php'));
 
+        // --- Évaluateurs ---
+        $camps->map(['GET', 'POST'], '/{id:[0-9]+}/evaluators', $includePage('evaluators.php'));
+
         // --- Évaluation ---
         $camps->get('/{id:[0-9]+}/evaluate', $includePage('evaluate.php'));
 

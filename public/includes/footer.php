@@ -6,3 +6,10 @@
 
 <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(e) {
+        console.warn('SW registration failed:', e);
+    });
+}
+</script>

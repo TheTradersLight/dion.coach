@@ -1,5 +1,96 @@
 <?php
-$user = $GLOBALS['user'] ?? null;
+declare(strict_types=1);
+
+use App\Database\CampRepository;
+use App\Database\EvaluatorRepository;
+use App\Database\SkillRepository;
+use App\Database\Database;
+
+$campId = (int)($_GET['camp_id'] ?? 0);
+$camp = $campId > 0 ? CampRepository::findById($campId) : null;
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$isOwner = $camp && (int)$camp['created_by'] === $userId;
+$isEvaluator = $camp && !$isOwner && EvaluatorRepository::isEvaluator($campId, $userId);
+
+if (!$camp || (!$isOwner && !$isEvaluator)) {
+    header('Location: /camps');
+    exit;
+}
+
+// Build CAMP_DATA payload (injected into JS)
+$sessions = Database::fetchAll(
+    "SELECT id, name, session_date, session_order FROM camp_sessions WHERE camp_id = ? ORDER BY session_order ASC, id ASC",
+    [$campId]
+);
+
+$groups = Database::fetchAll(
+    "SELECT id, name, color, sort_order FROM camp_groups WHERE camp_id = ? ORDER BY sort_order ASC, id ASC",
+    [$campId]
+);
+
+$players = Database::fetchAll(
+    "SELECT cp.id AS camp_player_id, p.id AS player_id, p.first_name, p.last_name,
+            p.jersey_number, p.position, cp.status
+     FROM camp_players cp
+     JOIN players p ON cp.player_id = p.id
+     WHERE cp.camp_id = ?
+     ORDER BY p.last_name ASC, p.first_name ASC",
+    [$campId]
+);
+
+$groupPlayers = Database::fetchAll(
+    "SELECT gp.camp_player_id, gp.group_id
+     FROM group_players gp
+     JOIN camp_groups cg ON gp.group_id = cg.id
+     WHERE cg.camp_id = ?",
+    [$campId]
+);
+$gpMap = [];
+foreach ($groupPlayers as $gp) {
+    $gpMap[(int)$gp['camp_player_id']] = (int)$gp['group_id'];
+}
+foreach ($players as &$p) {
+    $p['group_id'] = $gpMap[(int)$p['camp_player_id']] ?? null;
+}
+unset($p);
+
+$skillCategories = SkillRepository::getCategoriesWithSkills($campId);
+
+// Load existing evaluations for this user
+$evals = Database::fetchAll(
+    "SELECT e.session_id, e.camp_player_id, e.skill_id, e.rating, e.comment, e.evaluated_at
+     FROM evaluations e
+     JOIN camp_sessions cs ON e.session_id = cs.id
+     WHERE cs.camp_id = ? AND e.evaluated_by = ?",
+    [$campId, $userId]
+);
+$evalMap = [];
+foreach ($evals as $e) {
+    $key = $e['session_id'] . '-' . $e['camp_player_id'] . '-' . $e['skill_id'];
+    $evalMap[$key] = [
+        'rating' => (int)$e['rating'],
+        'comment' => $e['comment'] ?? '',
+        'timestamp' => $e['evaluated_at'],
+        'synced' => true,
+    ];
+}
+
+$campDataJson = json_encode([
+    'camp' => [
+        'id' => (int)$camp['id'],
+        'name' => $camp['name'],
+        'sport' => $camp['sport'],
+        'rating_min' => (int)$camp['rating_min'],
+        'rating_max' => (int)$camp['rating_max'],
+        'eval_mode' => $camp['eval_mode'],
+    ],
+    'sessions' => $sessions,
+    'groups' => $groups,
+    'players' => $players,
+    'skillCategories' => $skillCategories,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+$evalJson = json_encode($evalMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
 <!DOCTYPE html>
 <html lang="fr" data-bs-theme="dark">
@@ -11,10 +102,13 @@ $user = $GLOBALS['user'] ?? null;
 <div class="container-fluid py-3" id="app">
     <!-- Header bar -->
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-        <h5 class="mb-0" id="campName"></h5>
+        <div>
+            <a href="/camps/<?= $campId ?>" class="text-muted small text-decoration-none">&larr; Retour au camp</a>
+            <h5 class="mb-0 mt-1" id="campName"></h5>
+        </div>
         <div class="d-flex align-items-center gap-2">
-            <span id="syncStatus" class="badge bg-success">Sauvegarde locale</span>
-            <button class="btn btn-outline-light btn-sm" onclick="showResults()">Resultats</button>
+            <span id="syncStatus" class="badge bg-secondary">Chargement...</span>
+            <button class="btn btn-outline-light btn-sm" onclick="showResults()">Résultats</button>
         </div>
     </div>
 
@@ -35,8 +129,8 @@ $user = $GLOBALS['user'] ?? null;
     </div>
 
     <!-- Player navigation -->
-    <div class="d-flex align-items-center gap-2 mb-3">
-        <button class="btn btn-outline-secondary btn-sm" onclick="prevPlayer()" id="btnPrev">&laquo; Prec.</button>
+    <div class="d-flex align-items-center gap-2 mb-3" id="playerNav">
+        <button class="btn btn-outline-secondary btn-sm" onclick="prevPlayer()" id="btnPrev">&laquo; Préc.</button>
         <div class="flex-grow-1">
             <select id="selPlayer" class="form-select form-select-sm" onchange="onPlayerChange()">
             </select>
@@ -67,10 +161,11 @@ $user = $GLOBALS['user'] ?? null;
     <!-- Results view (hidden by default) -->
     <div id="resultsView" style="display:none;">
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0">Resultats</h5>
-            <button class="btn btn-outline-light btn-sm" onclick="hideResults()">Retour a l'evaluation</button>
+            <h5 class="mb-0">Résultats</h5>
+            <button class="btn btn-outline-light btn-sm" onclick="hideResults()">Retour à l'évaluation</button>
         </div>
-        <div class="table-responsive">
+        <div id="resultsLoading" class="text-muted">Chargement des résultats...</div>
+        <div class="table-responsive" id="resultsTableWrap" style="display:none;">
             <table class="table table-dark table-sm table-hover" id="resultsTable">
                 <thead id="resultsHead"></thead>
                 <tbody id="resultsBody"></tbody>
@@ -83,133 +178,79 @@ $user = $GLOBALS['user'] ?? null;
 
 <script>
 // ============================================================
-// DONNEES DE TEST
+// SERVER DATA (injected by PHP)
 // ============================================================
-const TEST_DATA = {
-    camp: {
-        id: 1,
-        name: "Camp de selection U15 - Saison 2025-2026",
-        sport: "Hockey",
-        rating_min: 1,
-        rating_max: 5,
-        eval_mode: "cumulative"
-    },
-    sessions: [
-        { id: 1, name: "Seance 1 - Evaluation initiale", session_order: 1 },
-        { id: 2, name: "Seance 2 - Deuxieme evaluation", session_order: 2 }
-    ],
-    groups: [
-        { id: 1, name: "Groupe A - 9h00", color: "#3b82f6" },
-        { id: 2, name: "Groupe B - 11h00", color: "#22c55e" },
-        { id: 3, name: "Groupe C - 13h00", color: "#f59e0b" }
-    ],
-    skillCategories: [
-        {
-            id: 1, name: "Physique", parent_id: null, sort_order: 1,
-            skills: [
-                { id: 1, name: "Vitesse" },
-                { id: 2, name: "Acceleration" },
-                { id: 3, name: "Changement de direction" },
-                { id: 4, name: "Endurance" },
-                { id: 5, name: "Hauteur" }
-            ]
-        },
-        {
-            id: 2, name: "Lancer", parent_id: null, sort_order: 2,
-            skills: [
-                { id: 6, name: "Coup droit" },
-                { id: 7, name: "Revers" }
-            ]
-        },
-        {
-            id: 3, name: "Defensive", parent_id: null, sort_order: 3,
-            skills: [
-                { id: 8, name: "Positionnement" },
-                { id: 9, name: "Repositionnement" },
-                { id: 10, name: "Prise d'information" },
-                { id: 11, name: "Anticipation" },
-                { id: 12, name: "Prise de decision" }
-            ]
-        },
-        {
-            id: 4, name: "Offensive", parent_id: null, sort_order: 4,
-            skills: [
-                { id: 13, name: "Position" },
-                { id: 14, name: "Ajustement au deplacement de jeu" },
-                { id: 15, name: "Synchronisme" },
-                { id: 16, name: "Creation d'espace" },
-                { id: 17, name: "Prise d'espace" }
-            ]
-        },
-        {
-            id: 5, name: "Psychologique", parent_id: null, sort_order: 5,
-            skills: [
-                { id: 18, name: "Ecoute" },
-                { id: 19, name: "Applique les consignes" },
-                { id: 20, name: "Adaptabilite" }
-            ]
-        }
-    ],
-    players: []
-};
-
-// Generer 30 joueurs test
-(function generatePlayers() {
-    const prenoms = [
-        "Alexis","Samuel","Nathan","Gabriel","William","Olivier","Thomas","Felix",
-        "Raphael","Mathis","Emile","Antoine","Jacob","Xavier","Edouard","Julien",
-        "Zachary","Hugo","Simon","Louis","Maxime","Etienne","Vincent","Cedric",
-        "Philippe","Benoit","Tristan","Marc-Antoine","Charles","Sebastien"
-    ];
-    const noms = [
-        "Tremblay","Gagnon","Bouchard","Cote","Fortin","Gauthier","Morin","Lavoie",
-        "Roy","Pelletier","Belanger","Levesque","Bergeron","Leblanc","Girard","Simard",
-        "Boucher","Ouellet","Poirier","Beaulieu","Cloutier","Dubois","Deschenes","Plante",
-        "Demers","Lachance","Martel","Savard","Therrien","Leclerc"
-    ];
-    const positions = ["Attaquant","Defenseur","Gardien","Centre","Ailier gauche","Ailier droit"];
-    const groupAssign = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
-
-    for (let i = 0; i < 30; i++) {
-        TEST_DATA.players.push({
-            id: i + 1,
-            camp_player_id: i + 1,
-            first_name: prenoms[i],
-            last_name: noms[i],
-            jersey_number: String(i + 1),
-            position: positions[i % positions.length],
-            group_id: groupAssign[i],
-            status: "active"
-        });
-    }
-})();
+const CAMP_DATA = <?= $campDataJson ?>;
+const SERVER_EVALS = <?= $evalJson ?>;
+const CAMP_ID = <?= $campId ?>;
 
 // ============================================================
-// ETAT DE L'APPLICATION
+// APPLICATION STATE
 // ============================================================
 let state = {
-    currentSessionId: 1,
+    currentSessionId: null,
     currentGroupId: null,
     currentPlayerIndex: 0,
     filteredPlayers: [],
-    evaluations: {} // key: "sessionId-campPlayerId-skillId" -> { rating, comment, timestamp }
+    evaluations: {}  // key: "sessionId-campPlayerId-skillId" -> { rating, comment, timestamp, synced, pendingDelete }
 };
 
-const STORAGE_KEY = "dion_camp_evals_" + TEST_DATA.camp.id;
+const STORAGE_KEY = "dion_camp_evals_" + CAMP_ID;
+const PENDING_KEY = "dion_camp_pending_" + CAMP_ID;
+let syncTimer = null;
+let isSyncing = false;
 
 // ============================================================
-// STOCKAGE LOCAL
+// LOCAL STORAGE (write-through buffer)
 // ============================================================
 function loadEvaluations() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-        state.evaluations = JSON.parse(saved);
+    // Start with server data
+    state.evaluations = {};
+    for (const [key, val] of Object.entries(SERVER_EVALS)) {
+        state.evaluations[key] = { ...val, synced: true };
+    }
+
+    // Overlay local pending changes
+    const local = localStorage.getItem(PENDING_KEY);
+    if (local) {
+        const pending = JSON.parse(local);
+        for (const [key, val] of Object.entries(pending)) {
+            if (val.pendingDelete) {
+                // Pending deletion — remove from evaluations but keep in pending
+                delete state.evaluations[key];
+            } else {
+                state.evaluations[key] = { ...val, synced: false };
+            }
+        }
     }
 }
 
-function saveEvaluations() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.evaluations));
+function savePending() {
+    const pending = {};
+    for (const [key, val] of Object.entries(state.evaluations)) {
+        if (!val.synced) {
+            pending[key] = val;
+        }
+    }
+
+    // Also keep pending deletes from localStorage
+    const local = localStorage.getItem(PENDING_KEY);
+    if (local) {
+        const oldPending = JSON.parse(local);
+        for (const [key, val] of Object.entries(oldPending)) {
+            if (val.pendingDelete && !(key in state.evaluations)) {
+                pending[key] = val;
+            }
+        }
+    }
+
+    if (Object.keys(pending).length > 0) {
+        localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+    } else {
+        localStorage.removeItem(PENDING_KEY);
+    }
     updateSyncStatus();
+    scheduleSyncDebounce();
 }
 
 function evalKey(sessionId, campPlayerId, skillId) {
@@ -225,36 +266,156 @@ function setEval(sessionId, campPlayerId, skillId, rating, comment) {
     state.evaluations[key] = {
         rating: rating,
         comment: comment || "",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        synced: false
     };
-    saveEvaluations();
+    savePending();
 }
 
 function removeEval(sessionId, campPlayerId, skillId) {
     const key = evalKey(sessionId, campPlayerId, skillId);
+    const existing = state.evaluations[key];
     delete state.evaluations[key];
-    saveEvaluations();
+
+    // If it was synced, we need to mark it as pending delete
+    if (existing && existing.synced) {
+        const local = localStorage.getItem(PENDING_KEY);
+        const pending = local ? JSON.parse(local) : {};
+        pending[key] = { pendingDelete: true, timestamp: new Date().toISOString() };
+        localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+    }
+    savePending();
 }
 
 // ============================================================
-// INITIALISATION
+// SYNC LOGIC
+// ============================================================
+function scheduleSyncDebounce() {
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncToServer, 2000);
+}
+
+async function syncToServer() {
+    if (isSyncing || !navigator.onLine) return;
+
+    const local = localStorage.getItem(PENDING_KEY);
+    if (!local) {
+        updateSyncStatus();
+        return;
+    }
+    const pending = JSON.parse(local);
+    const keys = Object.keys(pending);
+    if (keys.length === 0) return;
+
+    isSyncing = true;
+    updateSyncStatus();
+
+    // Split into upserts and deletes
+    const evaluations = [];
+    const deletes = [];
+    for (const [key, val] of Object.entries(pending)) {
+        const parts = key.split('-');
+        const payload = {
+            session_id: parseInt(parts[0]),
+            camp_player_id: parseInt(parts[1]),
+            skill_id: parseInt(parts[2]),
+        };
+        if (val.pendingDelete) {
+            deletes.push(payload);
+        } else {
+            payload.rating = val.rating;
+            payload.comment = val.comment || "";
+            evaluations.push(payload);
+        }
+    }
+
+    try {
+        const resp = await fetch(`/api/camps/${CAMP_ID}/evaluations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ evaluations, deletes }),
+            credentials: 'same-origin',
+        });
+
+        if (resp.ok) {
+            const data = await resp.json();
+            // Mark all synced
+            for (const key of keys) {
+                if (state.evaluations[key]) {
+                    state.evaluations[key].synced = true;
+                }
+            }
+            localStorage.removeItem(PENDING_KEY);
+        }
+    } catch (e) {
+        // Network error — keep pending, will retry
+        console.warn('Sync failed:', e);
+    }
+
+    isSyncing = false;
+    updateSyncStatus();
+}
+
+function getPendingCount() {
+    const local = localStorage.getItem(PENDING_KEY);
+    if (!local) return 0;
+    return Object.keys(JSON.parse(local)).length;
+}
+
+function updateSyncStatus() {
+    const el = document.getElementById("syncStatus");
+    const pending = getPendingCount();
+
+    if (isSyncing) {
+        el.textContent = "Synchronisation...";
+        el.className = "badge bg-info";
+    } else if (!navigator.onLine) {
+        el.textContent = `Hors ligne (${pending} en attente)`;
+        el.className = "badge bg-secondary";
+    } else if (pending > 0) {
+        el.textContent = `${pending} notes en attente`;
+        el.className = "badge bg-warning text-dark";
+    } else {
+        el.textContent = "Tout synchronisé";
+        el.className = "badge bg-success";
+    }
+}
+
+// Listen for online/offline
+window.addEventListener('online', () => { updateSyncStatus(); syncToServer(); });
+window.addEventListener('offline', () => { updateSyncStatus(); });
+
+// ============================================================
+// INITIALIZATION
 // ============================================================
 function init() {
     loadEvaluations();
-    document.getElementById("campName").textContent = TEST_DATA.camp.name;
+    document.getElementById("campName").textContent = CAMP_DATA.camp.name;
 
     // Populate sessions
     const selSession = document.getElementById("selSession");
-    TEST_DATA.sessions.forEach(s => {
+    if (CAMP_DATA.sessions.length === 0) {
         const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = s.name;
+        opt.value = "";
+        opt.textContent = "Aucune séance";
         selSession.appendChild(opt);
-    });
+    } else {
+        CAMP_DATA.sessions.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.name;
+            selSession.appendChild(opt);
+        });
+        // Pre-select session from URL ?session=
+        const urlSession = new URLSearchParams(window.location.search).get('session');
+        const match = urlSession ? CAMP_DATA.sessions.find(s => String(s.id) === urlSession) : null;
+        state.currentSessionId = match ? parseInt(match.id) : parseInt(CAMP_DATA.sessions[0].id);
+        selSession.value = state.currentSessionId;
+    }
 
     // Populate groups
     const selGroup = document.getElementById("selGroup");
-    TEST_DATA.groups.forEach(g => {
+    CAMP_DATA.groups.forEach(g => {
         const opt = document.createElement("option");
         opt.value = g.id;
         opt.textContent = g.name;
@@ -264,27 +425,27 @@ function init() {
     filterPlayers();
     renderEvalGrid();
     updateProgress();
+    updateSyncStatus();
 }
 
 // ============================================================
-// FILTRAGE ET NAVIGATION
+// FILTERING AND NAVIGATION
 // ============================================================
 function filterPlayers() {
     const groupId = state.currentGroupId;
-    state.filteredPlayers = TEST_DATA.players.filter(p => {
+    state.filteredPlayers = CAMP_DATA.players.filter(p => {
         if (p.status !== "active") return false;
         if (groupId && p.group_id !== groupId) return false;
         return true;
     });
 
-    // Populate player select
     const selPlayer = document.getElementById("selPlayer");
     selPlayer.innerHTML = "";
     state.filteredPlayers.forEach((p, idx) => {
         const opt = document.createElement("option");
         opt.value = idx;
         const evaluated = isPlayerEvaluated(p.camp_player_id);
-        opt.textContent = `#${p.jersey_number} ${p.first_name} ${p.last_name}${evaluated ? " \u2713" : ""}`;
+        opt.textContent = `#${p.jersey_number || '?'} ${p.first_name} ${p.last_name}${evaluated ? " \u2713" : ""}`;
         selPlayer.appendChild(opt);
     });
 
@@ -307,8 +468,11 @@ function isPlayerFullyEvaluated(campPlayerId) {
 
 function getAllSkills() {
     const skills = [];
-    TEST_DATA.skillCategories.forEach(cat => {
-        cat.skills.forEach(s => skills.push(s));
+    CAMP_DATA.skillCategories.forEach(cat => {
+        (cat.skills || []).forEach(s => skills.push(s));
+        (cat.children || []).forEach(sub => {
+            (sub.skills || []).forEach(s => skills.push(s));
+        });
     });
     return skills;
 }
@@ -350,7 +514,7 @@ function nextPlayer() {
 }
 
 // ============================================================
-// AFFICHAGE JOUEUR
+// PLAYER DISPLAY
 // ============================================================
 function showCurrentPlayer() {
     const player = state.filteredPlayers[state.currentPlayerIndex];
@@ -361,15 +525,13 @@ function showCurrentPlayer() {
     }
 
     document.getElementById("playerCard").style.display = "block";
-    document.getElementById("playerJersey").textContent = "#" + player.jersey_number;
+    document.getElementById("playerJersey").textContent = "#" + (player.jersey_number || '?');
     document.getElementById("playerName").textContent = player.first_name + " " + player.last_name;
-    document.getElementById("playerPosition").textContent = player.position;
+    document.getElementById("playerPosition").textContent = player.position || '';
 
-    // Update nav buttons
     document.getElementById("btnPrev").disabled = state.currentPlayerIndex === 0;
     document.getElementById("btnNext").disabled = state.currentPlayerIndex === state.filteredPlayers.length - 1;
 
-    // Load ratings into grid
     loadPlayerRatings(player);
     updatePlayerTotal(player);
     updateCategoryHeaders();
@@ -397,7 +559,6 @@ function loadPlayerRatings(player) {
                 btn.classList.add("active");
             }
         });
-        // Comment
         const commentEl = document.querySelector(`[data-skill="${skill.id}"] .skill-comment`);
         if (commentEl) {
             commentEl.value = ev ? ev.comment : "";
@@ -406,20 +567,37 @@ function loadPlayerRatings(player) {
 }
 
 // ============================================================
-// GRILLE D'EVALUATION
+// EVALUATION GRID
 // ============================================================
+function renderSkillsForCategory(skills, min, max) {
+    let html = "";
+    skills.forEach(skill => {
+        html += `<div class="eval-skill-row" data-skill="${skill.id}">`;
+        html += `<div class="eval-skill-name">${escHtml(skill.name)}</div>`;
+        html += `<div class="eval-skill-buttons">`;
+        for (let v = min; v <= max; v++) {
+            html += `<button type="button" class="rating-btn" data-value="${v}" onclick="rate(${skill.id}, ${v})">${v}</button>`;
+        }
+        html += `<button type="button" class="rating-btn rating-clear" onclick="clearRating(${skill.id})" title="Effacer">&times;</button>`;
+        html += `</div>`;
+        html += `<input type="text" class="form-control form-control-sm skill-comment" placeholder="Note..." onchange="saveComment(${skill.id}, this.value)">`;
+        html += `</div>`;
+    });
+    return html;
+}
+
 function renderEvalGrid() {
     const grid = document.getElementById("evalGrid");
-    const min = TEST_DATA.camp.rating_min;
-    const max = TEST_DATA.camp.rating_max;
+    const min = CAMP_DATA.camp.rating_min;
+    const max = CAMP_DATA.camp.rating_max;
     let html = "";
 
-    TEST_DATA.skillCategories.forEach(cat => {
+    CAMP_DATA.skillCategories.forEach(cat => {
         const collapseId = `cat-collapse-${cat.id}`;
         html += `<div class="eval-category mb-3">`;
         html += `<div class="eval-category-header" data-bs-toggle="collapse" data-bs-target="#${collapseId}" role="button" aria-expanded="false" aria-controls="${collapseId}">`;
         html += `<span class="cat-chevron me-2">&#9654;</span>`;
-        html += `<span class="cat-title">${cat.name}</span>`;
+        html += `<span class="cat-title">${escHtml(cat.name)}</span>`;
         html += `<span class="ms-auto d-flex align-items-center gap-2">`;
         html += `<span class="cat-avg text-muted small" id="cat-avg-${cat.id}">-</span>`;
         html += `<span class="cat-status badge" id="cat-status-${cat.id}"></span>`;
@@ -427,34 +605,39 @@ function renderEvalGrid() {
         html += `</div>`;
 
         html += `<div class="collapse" id="${collapseId}">`;
-        cat.skills.forEach(skill => {
-            html += `<div class="eval-skill-row" data-skill="${skill.id}">`;
-            html += `<div class="eval-skill-name">${skill.name}</div>`;
-            html += `<div class="eval-skill-buttons">`;
-            for (let v = min; v <= max; v++) {
-                html += `<button type="button" class="rating-btn" data-value="${v}" onclick="rate(${skill.id}, ${v})">${v}</button>`;
-            }
-            html += `<button type="button" class="rating-btn rating-clear" onclick="clearRating(${skill.id})" title="Effacer">&times;</button>`;
-            html += `</div>`;
-            html += `<input type="text" class="form-control form-control-sm skill-comment" placeholder="Note..." onchange="saveComment(${skill.id}, this.value)">`;
+        // Skills directly under category
+        html += renderSkillsForCategory(cat.skills || [], min, max);
+
+        // Sub-categories
+        (cat.children || []).forEach(sub => {
+            html += `<div class="ps-3 border-start border-secondary ms-2 mt-2 mb-1">`;
+            html += `<div class="text-muted small fw-semibold mb-1">${escHtml(sub.name)}</div>`;
+            html += renderSkillsForCategory(sub.skills || [], min, max);
             html += `</div>`;
         });
-        html += `</div>`;
-
-        html += `</div>`;
+        html += `</div></div>`;
     });
 
     grid.innerHTML = html;
     updateCategoryHeaders();
 }
 
+function getCategoryAllSkills(cat) {
+    const skills = [...(cat.skills || [])];
+    (cat.children || []).forEach(sub => {
+        (sub.skills || []).forEach(s => skills.push(s));
+    });
+    return skills;
+}
+
 function updateCategoryHeaders() {
     const player = state.filteredPlayers[state.currentPlayerIndex];
     if (!player) return;
 
-    TEST_DATA.skillCategories.forEach(cat => {
+    CAMP_DATA.skillCategories.forEach(cat => {
+        const catSkills = getCategoryAllSkills(cat);
         let sum = 0, count = 0;
-        cat.skills.forEach(skill => {
+        catSkills.forEach(skill => {
             const ev = getEval(state.currentSessionId, player.camp_player_id, skill.id);
             if (ev) { sum += ev.rating; count++; }
         });
@@ -463,8 +646,8 @@ function updateCategoryHeaders() {
         const statusEl = document.getElementById(`cat-status-${cat.id}`);
         if (!avgEl || !statusEl) return;
 
-        const total = cat.skills.length;
-        const isComplete = count === total;
+        const total = catSkills.length;
+        const isComplete = count === total && total > 0;
 
         avgEl.textContent = count > 0 ? (sum / count).toFixed(1) : "-";
         statusEl.textContent = isComplete ? "Complet" : `${count}/${total}`;
@@ -480,7 +663,6 @@ function rate(skillId, value) {
     const comment = existing ? existing.comment : "";
     setEval(state.currentSessionId, player.camp_player_id, skillId, value, comment);
 
-    // Update UI
     const btns = document.querySelectorAll(`[data-skill="${skillId}"] .rating-btn`);
     btns.forEach(btn => {
         btn.classList.remove("active");
@@ -536,74 +718,145 @@ function updatePlayerSelectLabel(player) {
         let suffix = "";
         if (full) suffix = " \u2713\u2713";
         else if (evaluated) suffix = " \u2713";
-        opt.textContent = `#${player.jersey_number} ${player.first_name} ${player.last_name}${suffix}`;
+        opt.textContent = `#${player.jersey_number || '?'} ${player.first_name} ${player.last_name}${suffix}`;
     }
 }
 
 // ============================================================
-// PROGRESSION
+// PROGRESS
 // ============================================================
 function updateProgress() {
-    const allSkills = getAllSkills();
     const totalPlayers = state.filteredPlayers.length;
     let evaluated = 0;
     state.filteredPlayers.forEach(p => {
         if (isPlayerFullyEvaluated(p.camp_player_id)) evaluated++;
     });
     document.getElementById("progressText").textContent =
-        `${evaluated} / ${totalPlayers} joueurs completes`;
-}
-
-function updateSyncStatus() {
-    const count = Object.keys(state.evaluations).length;
-    const el = document.getElementById("syncStatus");
-    el.textContent = `${count} notes sauvees localement`;
-    el.className = "badge bg-success";
+        `${evaluated} / ${totalPlayers} joueurs complétés`;
 }
 
 // ============================================================
-// RESULTATS
+// RESULTS
 // ============================================================
 function showResults() {
     document.getElementById("evalGrid").style.display = "none";
     document.getElementById("playerCard").style.display = "none";
-    document.querySelector(".d-flex.align-items-center.gap-2.mb-3").style.display = "none";
+    document.getElementById("playerNav").style.display = "none";
     document.getElementById("resultsView").style.display = "block";
-    renderResults();
+    loadResultsFromServer();
 }
 
 function hideResults() {
     document.getElementById("evalGrid").style.display = "block";
     document.getElementById("playerCard").style.display = "block";
-    document.querySelector(".d-flex.align-items-center.gap-2.mb-3").style.display = "flex";
+    document.getElementById("playerNav").style.display = "flex";
     document.getElementById("resultsView").style.display = "none";
 }
 
-function renderResults() {
+async function loadResultsFromServer() {
+    const loading = document.getElementById("resultsLoading");
+    const wrap = document.getElementById("resultsTableWrap");
+    loading.style.display = "block";
+    wrap.style.display = "none";
+
+    try {
+        const resp = await fetch(`/api/camps/${CAMP_ID}/results`, { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('API error');
+        const data = await resp.json();
+        renderResultsFromApi(data);
+    } catch (e) {
+        // Fallback: use local evaluations
+        renderResultsLocal();
+    }
+
+    loading.style.display = "none";
+    wrap.style.display = "block";
+}
+
+function renderResultsFromApi(data) {
+    const categories = CAMP_DATA.skillCategories;
     const allSkills = getAllSkills();
-    const categories = TEST_DATA.skillCategories;
+    const rMin = data.rating_min;
+    const rMax = data.rating_max;
+
+    // Build lookup: key -> avg_rating
+    const resultMap = {};
+    (data.results || []).forEach(r => {
+        const key = `${r.camp_player_id}-${r.skill_id}`;
+        if (!resultMap[key]) resultMap[key] = { sum: 0, count: 0 };
+        resultMap[key].sum += parseFloat(r.avg_rating);
+        resultMap[key].count++;
+    });
 
     // Header
     let headHtml = "<tr><th>Rang</th><th>#</th><th>Joueur</th><th>Pos.</th>";
     categories.forEach(cat => {
-        headHtml += `<th class="text-center cat-header" title="${cat.skills.map(s=>s.name).join(', ')}">${cat.name}</th>`;
+        headHtml += `<th class="text-center cat-header">${escHtml(cat.name)}</th>`;
     });
     headHtml += "<th class='text-center'>Moy.</th></tr>";
     document.getElementById("resultsHead").innerHTML = headHtml;
 
     // Build player scores
-    const playerScores = [];
     const players = state.currentGroupId
-        ? TEST_DATA.players.filter(p => p.group_id === state.currentGroupId && p.status === "active")
-        : TEST_DATA.players.filter(p => p.status === "active");
+        ? CAMP_DATA.players.filter(p => p.group_id === state.currentGroupId && p.status === "active")
+        : CAMP_DATA.players.filter(p => p.status === "active");
 
+    const playerScores = [];
     players.forEach(player => {
         const catAverages = [];
         let totalSum = 0, totalCount = 0;
 
         categories.forEach(cat => {
+            const catSkills = getCategoryAllSkills(cat);
             let catSum = 0, catCount = 0;
-            cat.skills.forEach(skill => {
+            catSkills.forEach(skill => {
+                const key = `${player.camp_player_id}-${skill.id}`;
+                if (resultMap[key]) {
+                    const avg = resultMap[key].sum / resultMap[key].count;
+                    catSum += avg;
+                    catCount++;
+                    totalSum += avg;
+                    totalCount++;
+                }
+            });
+            catAverages.push(catCount > 0 ? catSum / catCount : null);
+        });
+
+        playerScores.push({
+            player,
+            catAverages,
+            totalAvg: totalCount > 0 ? totalSum / totalCount : null
+        });
+    });
+
+    renderResultsTable(playerScores, categories, rMin, rMax);
+}
+
+function renderResultsLocal() {
+    const categories = CAMP_DATA.skillCategories;
+    const rMin = CAMP_DATA.camp.rating_min;
+    const rMax = CAMP_DATA.camp.rating_max;
+
+    let headHtml = "<tr><th>Rang</th><th>#</th><th>Joueur</th><th>Pos.</th>";
+    categories.forEach(cat => {
+        headHtml += `<th class="text-center cat-header">${escHtml(cat.name)}</th>`;
+    });
+    headHtml += "<th class='text-center'>Moy.</th></tr>";
+    document.getElementById("resultsHead").innerHTML = headHtml;
+
+    const players = state.currentGroupId
+        ? CAMP_DATA.players.filter(p => p.group_id === state.currentGroupId && p.status === "active")
+        : CAMP_DATA.players.filter(p => p.status === "active");
+
+    const playerScores = [];
+    players.forEach(player => {
+        const catAverages = [];
+        let totalSum = 0, totalCount = 0;
+
+        categories.forEach(cat => {
+            const catSkills = getCategoryAllSkills(cat);
+            let catSum = 0, catCount = 0;
+            catSkills.forEach(skill => {
                 const ev = getEval(state.currentSessionId, player.camp_player_id, skill.id);
                 if (ev) {
                     catSum += ev.rating;
@@ -616,13 +869,16 @@ function renderResults() {
         });
 
         playerScores.push({
-            player: player,
-            catAverages: catAverages,
+            player,
+            catAverages,
             totalAvg: totalCount > 0 ? totalSum / totalCount : null
         });
     });
 
-    // Sort by total average descending
+    renderResultsTable(playerScores, categories, rMin, rMax);
+}
+
+function renderResultsTable(playerScores, categories, rMin, rMax) {
     playerScores.sort((a, b) => {
         if (a.totalAvg === null && b.totalAvg === null) return 0;
         if (a.totalAvg === null) return 1;
@@ -630,18 +886,17 @@ function renderResults() {
         return b.totalAvg - a.totalAvg;
     });
 
-    // Render rows
     let bodyHtml = "";
     playerScores.forEach((ps, idx) => {
         const p = ps.player;
         bodyHtml += `<tr>`;
         bodyHtml += `<td class="text-center fw-bold">${ps.totalAvg !== null ? idx + 1 : "-"}</td>`;
-        bodyHtml += `<td>${p.jersey_number}</td>`;
-        bodyHtml += `<td>${p.first_name} ${p.last_name}</td>`;
-        bodyHtml += `<td><small class="text-muted">${p.position}</small></td>`;
+        bodyHtml += `<td>${escHtml(p.jersey_number || '?')}</td>`;
+        bodyHtml += `<td>${escHtml(p.first_name + ' ' + p.last_name)}</td>`;
+        bodyHtml += `<td><small class="text-muted">${escHtml(p.position || '')}</small></td>`;
         ps.catAverages.forEach(avg => {
             if (avg !== null) {
-                const pct = ((avg - TEST_DATA.camp.rating_min) / (TEST_DATA.camp.rating_max - TEST_DATA.camp.rating_min)) * 100;
+                const pct = ((avg - rMin) / (rMax - rMin)) * 100;
                 const color = pct >= 70 ? "text-success" : pct >= 40 ? "text-warning" : "text-danger";
                 bodyHtml += `<td class="text-center ${color}">${avg.toFixed(1)}</td>`;
             } else {
@@ -659,6 +914,15 @@ function renderResults() {
     document.getElementById("resultsBody").innerHTML = bodyHtml;
 }
 
+// ============================================================
+// UTILITY
+// ============================================================
+function escHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
 // Keyboard nav
 document.addEventListener("keydown", function(e) {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
@@ -668,6 +932,25 @@ document.addEventListener("keydown", function(e) {
 
 // Init
 document.addEventListener("DOMContentLoaded", init);
+
+// Backup camp data to IndexedDB for offline fallback
+document.addEventListener("DOMContentLoaded", function() {
+    if (window.OfflineManager) {
+        OfflineManager.saveCampData(CAMP_ID, CAMP_DATA).catch(function() {});
+    }
+});
+
+// Sync queued evaluations when coming back online
+window.addEventListener('online', function() {
+    if (window.OfflineManager) {
+        OfflineManager.syncQueuedEvaluations().then(function(result) {
+            if (result.synced > 0) {
+                console.log('Synced', result.synced, 'queued evaluations from IndexedDB');
+            }
+        }).catch(function() {});
+    }
+});
 </script>
+<script src="/js/offline-manager.js"></script>
 </body>
 </html>

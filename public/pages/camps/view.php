@@ -2,11 +2,15 @@
 declare(strict_types=1);
 
 use App\Database\CampRepository;
+use App\Database\EvaluatorRepository;
 
 $campId = (int)($_GET['camp_id'] ?? 0);
 $camp = $campId > 0 ? CampRepository::findById($campId) : null;
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$isOwner = $camp && (int)$camp['created_by'] === $userId;
+$isEvaluator = $camp && !$isOwner && EvaluatorRepository::isEvaluator($campId, $userId);
 
-if (!$camp || (int)$camp['created_by'] !== (int)$_SESSION['user_id']) {
+if (!$camp || (!$isOwner && !$isEvaluator)) {
     header('Location: /camps');
     exit;
 }
@@ -36,7 +40,11 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
         </div>
         <div class="d-flex gap-2">
             <span class="badge <?= $s[1] ?> fs-6 align-self-center"><?= htmlspecialchars($s[0]) ?></span>
-            <a href="/camps/<?= $campId ?>/edit" class="btn btn-outline-light btn-sm">Modifier</a>
+            <?php if ($isOwner): ?>
+                <a href="/camps/<?= $campId ?>/edit" class="btn btn-outline-light btn-sm">Modifier</a>
+            <?php else: ?>
+                <span class="badge bg-info">Évaluateur</span>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -88,10 +96,21 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
                 </div>
             </div>
         </div>
+        <?php if ($isOwner): ?>
+        <div class="col-6 col-md-3">
+            <div class="card bg-dark border-secondary text-center">
+                <div class="card-body py-3">
+                    <div class="fs-3 fw-bold text-light"><?= $stats['evaluators'] ?></div>
+                    <div class="text-muted small">Évaluateurs</div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Navigation rapide -->
     <div class="row g-3">
+        <?php if ($isOwner): ?>
         <div class="col-md-4">
             <a href="/camps/<?= $campId ?>/players" class="text-decoration-none">
                 <div class="card bg-dark border-secondary h-100">
@@ -133,6 +152,17 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
             </a>
         </div>
         <div class="col-md-4">
+            <a href="/camps/<?= $campId ?>/evaluators" class="text-decoration-none">
+                <div class="card bg-dark border-secondary h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-light">Évaluateurs</h5>
+                        <p class="card-text text-muted small">Inviter et gérer les évaluateurs du camp.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <?php endif; ?>
+        <div class="col-md-4">
             <a href="/camps/<?= $campId ?>/evaluate" class="text-decoration-none">
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
@@ -154,8 +184,36 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
         </div>
     </div>
 
+    <!-- Offline preparation -->
+    <div class="mt-4">
+        <button class="btn btn-outline-secondary btn-sm" id="btnOffline" onclick="prepareOffline(<?= $campId ?>)">
+            Préparer pour hors-ligne
+        </button>
+        <span id="offlineStatus" class="ms-2 small text-muted"></span>
+    </div>
+
 </main>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
+<script src="/js/offline-manager.js"></script>
+<script>
+async function prepareOffline(campId) {
+    const btn = document.getElementById('btnOffline');
+    const status = document.getElementById('offlineStatus');
+    btn.disabled = true;
+    status.textContent = 'Préparation en cours...';
+    status.className = 'ms-2 small text-info';
+
+    const result = await window.OfflineManager.prepareCampOffline(campId);
+    if (result.ok) {
+        status.textContent = 'Camp prêt pour utilisation hors-ligne!';
+        status.className = 'ms-2 small text-success';
+    } else {
+        status.textContent = 'Erreur: ' + (result.error || 'Échec de la préparation');
+        status.className = 'ms-2 small text-danger';
+    }
+    btn.disabled = false;
+}
+</script>
 </body>
 </html>

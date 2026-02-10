@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use App\Database\CampRepository;
 use App\Database\SkillRepository;
+use App\Database\SkillTemplates;
 
 $campId = (int)($_GET['camp_id'] ?? 0);
 $camp = $campId > 0 ? CampRepository::findById($campId) : null;
@@ -69,6 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 SkillRepository::deleteSkill($skillId);
             }
         }
+    } elseif ($action === 'load_template') {
+        $sport = $_POST['sport'] ?? '';
+        $template = SkillTemplates::getTemplate($sport);
+        if ($template) {
+            SkillRepository::loadTemplate($campId, $template);
+        }
     }
 
     header("Location: /camps/{$campId}/skills");
@@ -109,6 +116,33 @@ $tree = SkillRepository::getCategoriesWithSkills($campId);
             </div>
         </div>
     </form>
+
+    <!-- Charger un modèle (visible seulement si aucune catégorie) -->
+    <?php if (empty($tree)): ?>
+        <?php $sports = SkillTemplates::getSports(); ?>
+        <?php if (!empty($sports)): ?>
+        <form method="POST" class="card bg-dark border-secondary mb-4">
+            <div class="card-body">
+                <h6 class="text-muted mb-3">Charger un modèle</h6>
+                <input type="hidden" name="action" value="load_template">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <select name="sport" class="form-select form-select-sm bg-dark text-white border-secondary" required>
+                            <option value="">-- Choisir un sport --</option>
+                            <?php foreach ($sports as $sport): ?>
+                                <option value="<?= htmlspecialchars($sport) ?>"<?= ($camp['sport'] === $sport ? ' selected' : '') ?>><?= htmlspecialchars($sport) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-primary btn-sm w-100">Charger</button>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">Charge une grille de compétences prédéfinie pour le sport sélectionné.</small>
+            </div>
+        </form>
+        <?php endif; ?>
+    <?php endif; ?>
 
     <!-- Arbre des compétences -->
     <?php if (empty($tree)): ?>
