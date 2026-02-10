@@ -11,6 +11,7 @@ use App\Auth\AuthService;
 // 1) VÉRIFICATION : avons-nous des données OAuth en attente ?
 // ---------------------------------------------------------------------
 if (!isset($_SESSION['pending_oauth'])) {
+    session_write_close();
     header('Location: /login');
     exit;
 }
@@ -92,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION['pending_oauth']);
 
         // 2.6) Redirect final
+        session_write_close();
         header('Location: /dashboard');
         exit;
     }

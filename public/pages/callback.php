@@ -99,6 +99,7 @@ if (!$email || !$emailVerified) {
     }
 
     // À toi de créer cette page (message: va vérifier ton email puis reconnecte-toi)
+    session_write_close();
     header('Location: /verify-email-required');
     exit;
 }
@@ -114,6 +115,7 @@ if (!$provider || !$providerUserId) {
         'provider' => $provider,
         'providerUserId' => $providerUserId
     ]);
+    session_write_close();
     header('Location: /login');
     exit;
 }
@@ -141,6 +143,7 @@ if ($user) {
         exit;
     }
 
+    session_write_close();
     header('Location: /dashboard');
     exit;
 }
@@ -167,5 +170,6 @@ if (DEBUG_CALLBACK) {
     exit;
 }
 
+session_write_close();
 header('Location: /register');
 exit;
