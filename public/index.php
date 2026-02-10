@@ -37,3 +37,6 @@ $app->addErrorMiddleware(true, true, true);
 (require __DIR__ . '/../src/routes.php')($app);
 
 $app->run();
+
+// Forcer l'écriture de la session en BD après Slim
+session_write_close();

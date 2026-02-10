@@ -11,40 +11,50 @@ echo "4. Session data:\n";
 print_r($_SESSION);
 echo "\n";
 
-echo "5. Cookie header:\n";
-echo ($_SERVER['HTTP_COOKIE'] ?? '(none)') . "\n\n";
+// Set a test value to verify write works
+if (!isset($_SESSION['debug_counter'])) {
+    $_SESSION['debug_counter'] = 0;
+}
+$_SESSION['debug_counter']++;
+$_SESSION['debug_time'] = date('Y-m-d H:i:s');
+echo "5. Set debug_counter to: " . $_SESSION['debug_counter'] . "\n\n";
 
-echo "6. DB check - sessions table:\n";
+echo "6. Cookie header from browser:\n";
+echo ($_SERVER['HTTP_COOKIE'] ?? '(no cookies sent)') . "\n\n";
+
+echo "7. DB check - all sessions:\n";
 try {
     $pdo = \App\Database\Database::pdo();
     $stmt = $pdo->query("SELECT id, LENGTH(payload) as payload_len, last_activity, FROM_UNIXTIME(last_activity) as last_activity_human FROM sessions ORDER BY last_activity DESC LIMIT 10");
     $rows = $stmt->fetchAll();
     if (empty($rows)) {
-        echo "(empty - no sessions in DB)\n";
+        echo "  (empty - no sessions in DB)\n";
     } else {
         foreach ($rows as $row) {
-            echo "  id=" . substr($row['id'], 0, 16) . "... payload_len={$row['payload_len']} last={$row['last_activity_human']}\n";
+            $match = ($row['id'] === session_id()) ? ' <<<< CURRENT' : '';
+            echo "  id={$row['id']} payload_len={$row['payload_len']} last={$row['last_activity_human']}{$match}\n";
         }
     }
 } catch (\Throwable $e) {
-    echo "DB ERROR: " . $e->getMessage() . "\n";
+    echo "  DB ERROR: " . $e->getMessage() . "\n";
 }
 
-echo "\n7. Current session in DB:\n";
+echo "\n8. Force write test:\n";
 try {
+    session_write_close();
+    echo "  session_write_close() called OK\n";
+
+    // Now read back from DB
     $sid = session_id();
-    if ($sid) {
-        $stmt = $pdo->prepare("SELECT id, payload, last_activity FROM sessions WHERE id = :id");
-        $stmt->execute(['id' => $sid]);
-        $row = $stmt->fetch();
-        if ($row) {
-            echo "  FOUND - payload: " . $row['payload'] . "\n";
-        } else {
-            echo "  NOT FOUND in DB for session id: $sid\n";
-        }
+    $stmt = $pdo->prepare("SELECT id, payload, LENGTH(payload) as payload_len FROM sessions WHERE id = :id");
+    $stmt->execute(['id' => $sid]);
+    $row = $stmt->fetch();
+    if ($row) {
+        echo "  FOUND in DB after write_close - payload_len={$row['payload_len']}\n";
+        echo "  payload: {$row['payload']}\n";
     } else {
-        echo "  No session ID\n";
+        echo "  NOT FOUND in DB after write_close for id: $sid\n";
     }
 } catch (\Throwable $e) {
-    echo "DB ERROR: " . $e->getMessage() . "\n";
+    echo "  ERROR: " . $e->getMessage() . "\n";
 }
