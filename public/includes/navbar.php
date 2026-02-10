@@ -22,7 +22,7 @@
                 </li>
                 <?php if (!empty($_SESSION['user_email'])): ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="/camps/evaluate">Camps</a>
+                        <a class="nav-link" href="/camps">Camps</a>
                     </li>
                     <?php if (isset($_SESSION['role_id']) && (int)$_SESSION['role_id'] === 0): ?>
                         <li class="nav-item">

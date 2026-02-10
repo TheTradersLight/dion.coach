@@ -179,14 +179,6 @@ return function (App $app) {
             return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
         });
 
-        $group->get('/camps/evaluate', function (Request $r, Response $res) {
-            ob_start();
-            include __DIR__ . '/../public/pages/camps/evaluate.php';
-            $html = ob_get_clean();
-            $res->getBody()->write($html);
-            return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
-        });
-
         $group->get('/logout', function (Request $r, Response $res) {
             require_once __DIR__ . '/Auth/getAuth.php';
             $auth0 = getAuth();
@@ -353,4 +345,11 @@ return function (App $app) {
         });
 
     })->add(new RequireAdminMiddleware())->add(new RequireAuthMiddleware());
+
+    // =====================================================================
+    // ROUTES CAMPS DE SÉLECTION
+    // =====================================================================
+
+    $campsRoutes = require __DIR__ . '/routes-camps.php';
+    $campsRoutes($app);
 };
