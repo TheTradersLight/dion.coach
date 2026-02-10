@@ -1,5 +1,4 @@
 <?php
-session_start();
 
 //require_once __DIR__ . '/../src/Database/Database.php';
 //require_once __DIR__ . '/../src/Database/UserRepository.php';
@@ -12,7 +11,7 @@ use App\Auth\AuthService;
 // 1) VÉRIFICATION : avons-nous des données OAuth en attente ?
 // ---------------------------------------------------------------------
 if (!isset($_SESSION['pending_oauth'])) {
-    header('Location: /login.php');
+    header('Location: /login');
     exit;
 }
 
@@ -87,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_name'] = $name;
         $_SESSION['user_email'] = $email;
+        $_SESSION['role_id'] = $roleId;
 
         // 2.5) On supprime les données OAuth temporaires
         unset($_SESSION['pending_oauth']);

@@ -19,8 +19,6 @@ function trace($msg, $var = null) {
 
 use App\Database\UserRepository;
 
-session_start();
-
 // ---------------------------------------------------------------------
 // 1) Auth0 échange le code OAuth
 // ---------------------------------------------------------------------
@@ -132,6 +130,7 @@ if ($user) {
     $_SESSION['user_id']    = $dbUser['id'];
     $_SESSION['user_name']  = $dbUser['name'];   // DB source of truth
     $_SESSION['user_email'] = $dbUser['email'];
+    $_SESSION['role_id']    = $dbUser['role_id'] ?? 999;
 
     UserRepository::touchLogin($user['id'], $provider, $providerUserId, $avatarUrl);
 

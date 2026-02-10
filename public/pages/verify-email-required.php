@@ -1,8 +1,3 @@
-<?php
-// On récupère l'objet utilisateur passé depuis la route (via getAuth()->getUser())
-$user = getAuth()->getUser();
-?>
-
 <?php include __DIR__ . '/../includes/head.php'; ?>
 <body>
 <?php include __DIR__ . '/../includes/navbar.php'; ?>

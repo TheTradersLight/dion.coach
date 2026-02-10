@@ -2,10 +2,6 @@
 <html lang="fr">
 <?php
 
-
-// On récupère l'objet utilisateur passé depuis la route (via getAuth()->getUser())
-$user = getAuth()->getUser();
-
 // Traitement du formulaire (appel de SendMail)
 
 

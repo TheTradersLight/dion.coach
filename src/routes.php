@@ -2,15 +2,19 @@
 declare(strict_types=1);
 
 use Slim\App;
+use Slim\Routing\RouteCollectorProxy;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\Middleware\RequireAuthMiddleware;
 
 return function (App $app) {
 
+    // =====================================================================
+    // ROUTES PUBLIQUES
+    // =====================================================================
+
     // Page d'accueil
     $app->get('/', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/home.php';
         $html = ob_get_clean();
@@ -20,8 +24,6 @@ return function (App $app) {
 
     // News
     $app->get('/nouvelles', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/nouvelles.php';
         $html = ob_get_clean();
@@ -30,8 +32,6 @@ return function (App $app) {
     });
 
     $app->get('/a-propos', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/apropos.php';
         $html = ob_get_clean();
@@ -39,16 +39,14 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
 
-    $app->map(['GET', 'POST'],'/contact', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
-
+    $app->map(['GET', 'POST'], '/contact', function (Request $r, Response $res) {
         ob_start();
         include __DIR__ . '/../public/pages/contact.php';
         $html = ob_get_clean();
         $res->getBody()->write($html);
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
+
     $app->get('/login', function (Request $r, Response $res) {
         require_once __DIR__ . '/Auth/getAuth.php';
 
@@ -57,7 +55,7 @@ return function (App $app) {
             null,
             ['scope' => 'openid profile email'],
             'code',
-            true  // 👈 ceci retourne l'URL au lieu de faire un header() en interne
+            true
         );
 
         return $res
@@ -65,85 +63,33 @@ return function (App $app) {
             ->withStatus(302);
     });
 
-    $app->map(['GET', 'POST'],'/callback', function (Request $r, Response $res) {
+    $app->map(['GET', 'POST'], '/callback', function (Request $r, Response $res) {
         require_once __DIR__ . '/Auth/getAuth.php';
         $auth0 = getAuth();
         ob_start();
         include __DIR__ . '/../public/pages/callback.php';
         $html = ob_get_clean();
 
-        // IMPORTANT :
-        // callback.php fait des header(Location...) puis exit;
-        // donc normalement on NE devrait PAS atteindre ce point.
-        // Mais si jamais callback.php affiche du debug, on l'affiche.
-
         $res->getBody()->write($html);
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
-    $app->map(['GET', 'POST'], '/register', function (Request $r, Response $res) {
-        //require_once __DIR__ . '/Auth/getAuth.php';
-        //$auth0 = getAuth();
 
+    $app->map(['GET', 'POST'], '/register', function (Request $r, Response $res) {
         ob_start();
         include __DIR__ . '/../public/pages/register.php';
         $html = ob_get_clean();
 
-        // register.php va souvent faire:
-        //   header('Location: /dashboard');
-        //   exit;
-        //
-        // Donc ce code ne sera atteint que si:
-        // - il y a des erreurs
-        // - ou on affiche juste le formulaire
-        // - ou on est en debug
-
         $res->getBody()->write($html);
-
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
     });
+
     $app->map(['GET', 'POST'], '/verify-email-required', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
         ob_start();
         include __DIR__ . '/../public/pages/verify-email-required.php';
         $html = ob_get_clean();
 
         $res->getBody()->write($html);
-
         return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
-    });
-    $app->get('/dashboard', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
-
-        if (!$user) {
-            return $res->withHeader('Location', '/login')->withStatus(302);
-        }
-        $GLOBALS['user'] = $user;
-        ob_start();
-        include __DIR__ . '/../public/pages/dashboard.php';
-        $html = ob_get_clean();
-        $res->getBody()->write($html);
-        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
-    });
-
-    $app->get('/logout', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-
-        $auth0 = getAuth();
-
-        // 1. Supprimer session côté application (cookie)
-        $auth0->clear();
-
-        // 2. Rediriger vers Auth0 pour déconnexion OAuth + retour à la page d'accueil
-        $logoutUrl = sprintf(
-            'https://%s/v2/logout?client_id=%s&returnTo=%s',
-            $auth0->configuration()->getDomain(),
-            $auth0->configuration()->getClientId(),
-            urlencode('https://dion.coach/') // 👈 page d’accueil
-        );
-
-        return $res->withHeader('Location', $logoutUrl)->withStatus(302);
     });
 
     $app->get('/privacy-policy', function ($req, $res) {
@@ -170,18 +116,50 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html');
     });
 
-    // --- Camps de selection (prototype) ---
-    $app->get('/camps/evaluate', function (Request $r, Response $res) {
-        require_once __DIR__ . '/Auth/getAuth.php';
-        $user = getAuth()->getUser();
-        if (!$user) {
-            return $res->withHeader('Location', '/login')->withStatus(302);
-        }
-        $GLOBALS['user'] = $user;
-        ob_start();
-        include __DIR__ . '/../public/pages/camps/evaluate.php';
-        $html = ob_get_clean();
-        $res->getBody()->write($html);
-        return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
-    });
+    // =====================================================================
+    // ROUTES PROTÉGÉES (RequireAuthMiddleware)
+    // =====================================================================
+
+    $app->group('', function (RouteCollectorProxy $group) {
+
+        $group->get('/dashboard', function (Request $r, Response $res) {
+            ob_start();
+            include __DIR__ . '/../public/pages/dashboard.php';
+            $html = ob_get_clean();
+            $res->getBody()->write($html);
+            return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+        });
+
+        $group->get('/camps/evaluate', function (Request $r, Response $res) {
+            ob_start();
+            include __DIR__ . '/../public/pages/camps/evaluate.php';
+            $html = ob_get_clean();
+            $res->getBody()->write($html);
+            return $res->withHeader('Content-Type', 'text/html; charset=utf-8');
+        });
+
+        $group->get('/logout', function (Request $r, Response $res) {
+            require_once __DIR__ . '/Auth/getAuth.php';
+            $auth0 = getAuth();
+            $auth0->clear();
+
+            // Détruire la session PHP
+            $_SESSION = [];
+            if (ini_get('session.use_cookies')) {
+                $p = session_get_cookie_params();
+                setcookie(session_name(), '', time() - 42000,
+                    $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+            }
+            session_destroy();
+
+            $logoutUrl = sprintf(
+                'https://%s/v2/logout?client_id=%s&returnTo=%s',
+                $auth0->configuration()->getDomain(),
+                $auth0->configuration()->getClientId(),
+                urlencode('https://dion.coach/')
+            );
+            return $res->withHeader('Location', $logoutUrl)->withStatus(302);
+        });
+
+    })->add(new RequireAuthMiddleware());
 };
