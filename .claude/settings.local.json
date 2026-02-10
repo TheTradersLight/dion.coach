@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /c/dev/dion.coach status)",
+      "Bash(git -C /c/dev/dion.coach diff public/includes/navbar.php)",
+      "Bash(git -C /c/dev/dion.coach log --oneline -5)",
+      "Bash(git -C /c/dev/dion.coach add public/includes/navbar.php)",
+      "Bash(git -C /c/dev/dion.coach commit -m \"$\\(cat <<''EOF''\nFix navbar: restore dion.coach menu accidentally replaced by trading project\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/dev/dion.coach branch -a)",
+      "Bash(git -C /c/dev/dion.coach push origin master)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(gcloud config set:*)",
+      "Bash(gcloud builds submit:*)",
+      "Bash(gcloud run deploy:*)",
+      "Bash(git -C /c/dev/dion.coach add public/pages/contact.php public/pages/apropos.php public/pages/nouvelles.php public/pages/dashboard.php public/pages/verify-email-required.php docs/ARCHITECTURE.md)",
+      "Bash(git -C /c/dev/dion.coach commit -m \"$\\(cat <<''EOF''\nFix mobile hamburger menu: re-enable footer.php \\(Bootstrap JS\\) on all pages\n\nAlso add architecture documentation.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/dev/dion.coach add public/css/camps.css public/pages/camps/evaluate.php)",
+      "Bash(git -C /c/dev/dion.coach commit -m \"$\\(cat <<''EOF''\nAdd collapsible categories with avg and completion status in eval grid\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(dir:*)",
+      "Bash(gcloud run services logs read:*)",
+      "Bash(gcloud logging read:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gcloud run services list:*)"
+    ]
+  }
+}
