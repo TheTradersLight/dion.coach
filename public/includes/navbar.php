@@ -24,6 +24,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/camps/evaluate">Camps</a>
                     </li>
+                    <?php if (isset($_SESSION['role_id']) && (int)$_SESSION['role_id'] === 0): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/news">Admin</a>
+                        </li>
+                    <?php endif; ?>
                     <li class="nav-item">
                         <a class="nav-link" href="/logout">Déconnexion</a>
                     </li>

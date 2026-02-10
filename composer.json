@@ -5,7 +5,8 @@
     "slim/psr7": "^1.6",
     "guzzlehttp/guzzle": "^7.9",
     "auth0/auth0-php": "^8.0",
-    "phpmailer/phpmailer": "^6.9"
+    "phpmailer/phpmailer": "^6.9",
+    "google/cloud-storage": "^1.30"
   },
   "autoload": {
     "psr-4": {
