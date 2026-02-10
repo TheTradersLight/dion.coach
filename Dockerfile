@@ -18,6 +18,10 @@ RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /et
 
 RUN composer install --no-dev --prefer-dist --optimize-autoloader
 
+# PHP error logging to stderr (visible in Cloud Run logs)
+RUN echo "error_log = /dev/stderr" >> /usr/local/etc/php/conf.d/logging.ini \
+    && echo "log_errors = On" >> /usr/local/etc/php/conf.d/logging.ini
+
 EXPOSE 8080
 ENV APACHE_LISTEN_PORT=8080
 RUN sed -i 's/80/${APACHE_LISTEN_PORT}/' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
