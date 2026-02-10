@@ -116,6 +116,15 @@ return function (App $app) {
         return $res->withHeader('Content-Type', 'text/html');
     });
 
+    // TEMPORARY DEBUG ROUTE - REMOVE AFTER DEBUGGING
+    $app->get('/debug-session', function ($req, $res) {
+        ob_start();
+        include __DIR__ . '/../public/pages/debug-session.php';
+        $html = ob_get_clean();
+        $res->getBody()->write($html);
+        return $res->withHeader('Content-Type', 'text/plain');
+    });
+
     // =====================================================================
     // ROUTES PROTÉGÉES (RequireAuthMiddleware)
     // =====================================================================
