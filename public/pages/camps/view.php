@@ -59,8 +59,8 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
             <a href="/camps/<?= $campId ?>/access-codes" class="text-decoration-none">
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
-                        <h5 class="card-title text-light">Codes d'accÃ¨s</h5>
-                        <p class="card-text text-muted small">GÃ©nÃ©rer des codes pour l'accÃ¨s aux tests physiques.</p>
+                        <h5 class="card-title text-light">Codes d'accès</h5>
+                        <p class="card-text text-muted small">Générer des codes pour l'accès aux tests physiques.</p>
                     </div>
                 </div>
             </a>
@@ -187,7 +187,7 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
                         <h5 class="card-title text-light">Tests physiques</h5>
-                        <p class="card-text text-muted small">Saisir les rÃ©sultats des tests physiques.</p>
+                        <p class="card-text text-muted small">Saisir les résultats des tests physiques.</p>
                     </div>
                 </div>
             </a>

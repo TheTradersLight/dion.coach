@@ -71,6 +71,7 @@ if (!$camp) {
         </div>
     </div>
 
+    <div id="playerSection" style="display:none;">
     <div class="row g-2 mb-3">
         <div class="col-auto">
             <select id="selSession" class="form-select form-select-sm" onchange="onSessionChange()"></select>
@@ -92,7 +93,7 @@ if (!$camp) {
     </div>
 
     <div class="d-flex align-items-center gap-2 mb-3" id="playerNav">
-        <button class="btn btn-outline-secondary btn-sm" onclick="prevPlayer()" id="btnPrev">&laquo; PrÃ©c.</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="prevPlayer()" id="btnPrev">&laquo; Préc.</button>
         <div class="flex-grow-1">
             <select id="selPlayer" class="form-select form-select-sm" onchange="onPlayerChange()"></select>
         </div>
@@ -113,6 +114,7 @@ if (!$camp) {
             </div>
         </div>
     </div>
+    </div>
 
     <div id="testsGrid"></div>
 
@@ -132,6 +134,7 @@ if (!$camp) {
 </main>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
+<script src="/js/offline-manager.js"></script>
 <script>
 const CAMP_ID = <?= $campId ?>;
 const IS_AUTH = <?= $isAuth ? 'true' : 'false' ?>;
@@ -308,7 +311,7 @@ function updateSyncStatus() {
         el.className = "badge bg-warning text-dark";
         if (banner) banner.classList.add("d-none");
     } else {
-        el.textContent = "Tout synchronisÃ©";
+        el.textContent = "Tout synchronisé";
         el.className = "badge bg-success";
         if (banner) banner.classList.add("d-none");
     }
@@ -487,7 +490,7 @@ async function submitAccessCode() {
     } catch (e) {
         const status = document.getElementById("offlineStatus");
         if (status) {
-            status.textContent = "Code invalide ou expirÃ©.";
+            status.textContent = "Code invalide ou expiré.";
             status.className = "small text-danger";
         }
     }
@@ -505,7 +508,7 @@ function initUI() {
     selSession.innerHTML = "";
     const optNone = document.createElement("option");
     optNone.value = "";
-    optNone.textContent = "Aucune sÃ©ance";
+    optNone.textContent = "Aucune séance";
     selSession.appendChild(optNone);
     state.sessions.forEach(s => {
         const opt = document.createElement("option");
@@ -533,6 +536,7 @@ function initUI() {
     });
 
     filterPlayers();
+    updatePlayerSectionVisibility();
     renderTests();
     updateSyncStatus();
 }
@@ -706,6 +710,7 @@ function applyAccessScope() {
 function selectStation(testTypeId) {
     state.selectedTestTypeId = testTypeId;
     document.getElementById("stationSelect").style.display = "none";
+    updatePlayerSectionVisibility();
     renderTests();
     updateProgress();
 }
@@ -714,8 +719,15 @@ function resetStation() {
     if (state.lockedTestTypeId) return;
     state.selectedTestTypeId = null;
     document.getElementById("stationSelect").style.display = "block";
+    updatePlayerSectionVisibility();
     renderTests();
     updateProgress();
+}
+
+function updatePlayerSectionVisibility() {
+    const section = document.getElementById("playerSection");
+    if (!section) return;
+    section.style.display = state.selectedTestTypeId ? "block" : "none";
 }
 
 function isPlayerCompleteForStation(playerId, testTypeId) {
@@ -1050,7 +1062,7 @@ async function init() {
         }
     } catch (e) {
         if (!state.camp) {
-            document.getElementById("testsGrid").innerHTML = '<p class="text-muted">Impossible de charger les donnÃ©es hors-ligne. Connectez-vous et prÃ©parez le camp.</p>';
+            document.getElementById("testsGrid").innerHTML = '<p class="text-muted">Impossible de charger les données hors-ligne. Connectez-vous et préparez le camp.</p>';
         }
     }
 

@@ -1,5 +1,7 @@
 # TODO — dion.coach
 
+- [ ] Correction de l'encodage : les accents sont mal affichés (rétablir l'UTF-8)
+
 ## Camps de sélection
 
 ### Évaluateurs
