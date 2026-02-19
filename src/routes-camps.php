@@ -74,9 +74,12 @@ return function (App $app) {
 
         // --- Évaluateurs ---
         $camps->map(['GET', 'POST'], '/{id:[0-9]+}/evaluators', $includePage('evaluators.php'));
+        $camps->map(['GET', 'POST'], '/{id:[0-9]+}/access-codes', $includePage('access-codes.php'));
 
         // --- Évaluation ---
         $camps->get('/{id:[0-9]+}/evaluate', $includePage('evaluate.php'));
+        $camps->get('/{id:[0-9]+}/test-physique', $includePage('test-physique.php'));
+        $camps->get('/{id:[0-9]+}/test-physique-results', $includePage('test-physique-results.php'));
 
         // --- Résultats ---
         $camps->get('/{id:[0-9]+}/results', $includePage('results.php'));

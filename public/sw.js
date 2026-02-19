@@ -85,7 +85,7 @@ function isAppShellRequest(url, request) {
 }
 
 function isEvaluatePage(url) {
-    return /^\/camps\/\d+\/evaluate$/.test(url.pathname);
+    return /^\/camps\/\d+\/(evaluate|test-physique|test-physique-results)$/.test(url.pathname);
 }
 
 function isApiRequest(url) {

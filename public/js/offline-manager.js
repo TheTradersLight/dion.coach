@@ -106,12 +106,22 @@ async function prepareCampOffline(campId) {
         // 2. Save to IndexedDB
         await saveCampData(campId, data);
 
-        // 3. Ask service worker to cache the evaluation page
+        // 3. Ask service worker to cache the evaluation pages
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             const evalUrl = `/camps/${campId}/evaluate`;
+            const testUrl = `/camps/${campId}/test-physique`;
+            const resultsUrl = `/camps/${campId}/test-physique-results`;
             navigator.serviceWorker.controller.postMessage({
                 type: 'CACHE_PAGE',
                 url: evalUrl
+            });
+            navigator.serviceWorker.controller.postMessage({
+                type: 'CACHE_PAGE',
+                url: testUrl
+            });
+            navigator.serviceWorker.controller.postMessage({
+                type: 'CACHE_PAGE',
+                url: resultsUrl
             });
         }
 

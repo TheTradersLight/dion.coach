@@ -55,6 +55,16 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
     <div class="text-muted small mb-4">
         <?php if ($camp['sport'] !== ''): ?>
             <span class="me-3"><?= htmlspecialchars($camp['sport']) ?></span>
+        <div class="col-md-4">
+            <a href="/camps/<?= $campId ?>/access-codes" class="text-decoration-none">
+                <div class="card bg-dark border-secondary h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-light">Codes d'accÃ¨s</h5>
+                        <p class="card-text text-muted small">GÃ©nÃ©rer des codes pour l'accÃ¨s aux tests physiques.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
         <?php endif; ?>
         <?php if ($camp['season'] !== ''): ?>
             <span class="me-3">Saison <?= htmlspecialchars($camp['season']) ?></span>
@@ -168,6 +178,16 @@ $s = $statusLabels[$camp['status']] ?? ['?', 'bg-secondary'];
                     <div class="card-body">
                         <h5 class="card-title text-light">Évaluer</h5>
                         <p class="card-text text-muted small">Saisir les notes des joueurs.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="/camps/<?= $campId ?>/test-physique" class="text-decoration-none">
+                <div class="card bg-dark border-secondary h-100">
+                    <div class="card-body">
+                        <h5 class="card-title text-light">Tests physiques</h5>
+                        <p class="card-text text-muted small">Saisir les rÃ©sultats des tests physiques.</p>
                     </div>
                 </div>
             </a>

@@ -153,3 +153,97 @@ CREATE INDEX idx_evaluations_session ON evaluations(session_id);
 CREATE INDEX idx_evaluations_player ON evaluations(camp_player_id);
 CREATE INDEX idx_skill_categories_camp ON skill_categories(camp_id);
 CREATE INDEX idx_skill_categories_parent ON skill_categories(parent_id);
+
+-- ============================================================
+-- Test Physique - Types de tests, metriques et resultats
+-- ============================================================
+
+CREATE TABLE test_types (
+                             id INT AUTO_INCREMENT PRIMARY KEY,
+                             camp_id INT NULL,
+                             name VARCHAR(255) NOT NULL,
+                             description TEXT NULL,
+                             sort_order INT NOT NULL DEFAULT 0,
+                             is_active TINYINT(1) NOT NULL DEFAULT 1,
+                             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                             CONSTRAINT fk_test_types_camp FOREIGN KEY (camp_id) REFERENCES camps(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE test_metrics (
+                               id INT AUTO_INCREMENT PRIMARY KEY,
+                               test_type_id INT NOT NULL,
+                               name VARCHAR(100) NOT NULL,
+                               label VARCHAR(255) NOT NULL,
+                               unit VARCHAR(20) NOT NULL,
+                               value_type ENUM('number', 'integer', 'text') NOT NULL DEFAULT 'number',
+                               calc_rule ENUM('none', 'min', 'max') NOT NULL DEFAULT 'none',
+                               is_output TINYINT(1) NOT NULL DEFAULT 0,
+                               sort_order INT NOT NULL DEFAULT 0,
+                               CONSTRAINT fk_test_metrics_type FOREIGN KEY (test_type_id) REFERENCES test_types(id) ON DELETE CASCADE,
+                               UNIQUE KEY uq_test_metric (test_type_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE test_results (
+                               id INT AUTO_INCREMENT PRIMARY KEY,
+                               camp_id INT NOT NULL,
+                               player_id INT unsigned NOT NULL,
+                               test_type_id INT NOT NULL,
+                               session_id INT NULL,
+                               metric_id INT NOT NULL,
+                               value_number DECIMAL(10, 3) NULL,
+                               value_text VARCHAR(255) NULL,
+                               created_by INT unsigned NOT NULL,
+                               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                               CONSTRAINT fk_test_results_camp FOREIGN KEY (camp_id) REFERENCES camps(id) ON DELETE CASCADE,
+                               CONSTRAINT fk_test_results_player FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+                               CONSTRAINT fk_test_results_type FOREIGN KEY (test_type_id) REFERENCES test_types(id) ON DELETE CASCADE,
+                               CONSTRAINT fk_test_results_session FOREIGN KEY (session_id) REFERENCES camp_sessions(id) ON DELETE SET NULL,
+                               CONSTRAINT fk_test_results_metric FOREIGN KEY (metric_id) REFERENCES test_metrics(id) ON DELETE CASCADE,
+                               CONSTRAINT fk_test_results_user FOREIGN KEY (created_by) REFERENCES users(id),
+                               UNIQUE KEY uq_test_result (camp_id, player_id, test_type_id, session_id, metric_id, created_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE test_metric_options (
+                                      id INT AUTO_INCREMENT PRIMARY KEY,
+                                      metric_id INT NOT NULL,
+                                      value VARCHAR(100) NOT NULL,
+                                      label VARCHAR(255) NOT NULL,
+                                      sort_order INT NOT NULL DEFAULT 0,
+                                      is_active TINYINT(1) NOT NULL DEFAULT 1,
+                                      CONSTRAINT fk_tmo_metric FOREIGN KEY (metric_id) REFERENCES test_metrics(id) ON DELETE CASCADE,
+                                      UNIQUE KEY uq_tmo_metric_value (metric_id, value),
+                                      INDEX idx_tmo_metric (metric_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE camp_access_codes (
+                                    id INT AUTO_INCREMENT PRIMARY KEY,
+                                    camp_id INT NOT NULL,
+                                    test_type_id INT NULL,
+                                    user_id INT unsigned NOT NULL,
+                                    code_hash CHAR(64) NOT NULL,
+                                    role ENUM('station', 'admin') NOT NULL DEFAULT 'station',
+                                    status ENUM('active', 'revoked') NOT NULL DEFAULT 'active',
+                                    expires_at DATETIME NULL,
+                                    created_by INT unsigned NOT NULL,
+                                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    CONSTRAINT fk_cac_camp FOREIGN KEY (camp_id) REFERENCES camps(id) ON DELETE CASCADE,
+                                    CONSTRAINT fk_cac_test_type FOREIGN KEY (test_type_id) REFERENCES test_types(id) ON DELETE SET NULL,
+                                    CONSTRAINT fk_cac_user FOREIGN KEY (user_id) REFERENCES users(id),
+                                    CONSTRAINT fk_cac_created_by FOREIGN KEY (created_by) REFERENCES users(id),
+                                    UNIQUE KEY uq_cac_hash (camp_id, code_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE camp_access_tokens (
+                                     id INT AUTO_INCREMENT PRIMARY KEY,
+                                     access_code_id INT NOT NULL,
+                                     camp_id INT NOT NULL,
+                                     token_hash CHAR(64) NOT NULL,
+                                     expires_at DATETIME NULL,
+                                     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     last_used_at DATETIME NULL,
+                                     CONSTRAINT fk_cat_code FOREIGN KEY (access_code_id) REFERENCES camp_access_codes(id) ON DELETE CASCADE,
+                                     CONSTRAINT fk_cat_camp FOREIGN KEY (camp_id) REFERENCES camps(id) ON DELETE CASCADE,
+                                     UNIQUE KEY uq_cat_hash (camp_id, token_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

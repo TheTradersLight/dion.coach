@@ -147,3 +147,93 @@
         font-size: 1rem;
     }
 }
+
+/* ============================================================
+   Tests physiques
+   ============================================================ */
+.test-card {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: .5rem;
+    overflow: hidden;
+    background: rgba(20,20,20,.6);
+}
+.test-card-header {
+    background: rgba(255,255,255,.04);
+    color: var(--brand-text);
+    font-weight: 600;
+    padding: .6rem .85rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.test-card-body {
+    padding: .5rem .75rem .75rem;
+}
+.test-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1.2fr) minmax(160px, 1fr) 60px 90px;
+    gap: .5rem;
+    align-items: center;
+    padding: .45rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.test-row:last-child {
+    border-bottom: none;
+}
+.test-label {
+    font-size: .85rem;
+}
+.test-unit {
+    font-size: .8rem;
+    color: rgba(255,255,255,.5);
+    text-align: left;
+}
+.test-actions {
+    text-align: right;
+}
+.test-input .form-control,
+.test-input .form-select {
+    background: rgba(255,255,255,.05);
+    border-color: rgba(255,255,255,.1);
+    color: var(--brand-text);
+}
+.test-input-lg {
+    font-size: 1.1rem;
+    padding: .55rem .7rem;
+    min-height: 46px;
+}
+.station-card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    cursor: pointer;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.station-card:hover {
+    border-color: var(--brand-gold);
+    background: rgba(212,175,55,.08);
+    transform: translateY(-2px);
+}
+
+.offline-panel {
+    border: 1px dashed rgba(255,255,255,.15);
+    border-radius: .6rem;
+    padding: .7rem .9rem;
+    background: rgba(255,255,255,.02);
+}
+.test-input .form-control:focus,
+.test-input .form-select:focus {
+    background: rgba(255,255,255,.08);
+    border-color: var(--brand-gold);
+    box-shadow: 0 0 0 .15rem rgba(212,175,55,.15);
+}
+
+@media (max-width: 768px) {
+    .test-row {
+        grid-template-columns: 1fr;
+        gap: .35rem;
+    }
+    .test-unit,
+    .test-actions {
+        text-align: left;
+    }
+}

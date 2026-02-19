@@ -16,6 +16,11 @@ class RequireAuthMiddleware implements MiddlewareInterface
             session_start();
         }
 
+        $path = $request->getUri()->getPath();
+        if (preg_match('#^/camps/\d+/test-physique#', $path) || preg_match('#^/camps/\d+/test-physique-results#', $path)) {
+            return $handler->handle($request);
+        }
+
         // Rule: must be logged in
         if (empty($_SESSION['user_id'])) {
             $response = new \Slim\Psr7\Response();
