@@ -63,16 +63,16 @@ final class NewsRepository
             "INSERT INTO news
                 (slug, title, excerpt, body_html, image_path, meta_description, published_at, is_published, is_pinned)
              VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?, ?) AS new
              ON DUPLICATE KEY UPDATE
-                title = VALUES(title),
-                excerpt = VALUES(excerpt),
-                body_html = VALUES(body_html),
-                image_path = VALUES(image_path),
-                meta_description = VALUES(meta_description),
-                published_at = VALUES(published_at),
-                is_published = VALUES(is_published),
-                is_pinned = VALUES(is_pinned)",
+                title = new.title,
+                excerpt = new.excerpt,
+                body_html = new.body_html,
+                image_path = new.image_path,
+                meta_description = new.meta_description,
+                published_at = new.published_at,
+                is_published = new.is_published,
+                is_pinned = new.is_pinned",
             [
                 (string)($data['slug'] ?? ''),
                 (string)($data['title'] ?? ''),

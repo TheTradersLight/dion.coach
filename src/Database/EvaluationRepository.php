@@ -9,8 +9,8 @@ final class EvaluationRepository
     {
         Database::execute(
             "INSERT INTO evaluations (session_id, camp_player_id, skill_id, evaluated_by, rating, comment)
-             VALUES (?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment), updated_at = NOW()",
+             VALUES (?, ?, ?, ?, ?, ?) AS new
+             ON DUPLICATE KEY UPDATE rating = new.rating, comment = new.comment, updated_at = NOW()",
             [$sessionId, $campPlayerId, $skillId, $evaluatedBy, $rating, $comment]
         );
     }
